@@ -16,8 +16,8 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <cstdarg>
 #include <exception>
+#include <cstdarg>
 
 #include <jni.h>
 
