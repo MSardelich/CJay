@@ -5,6 +5,8 @@
  *      Author: msn
  */
 
+#define DEFAULT_JNI_VERSION JNI_VERSION_1_8;
+
 #include "Handler.h"
 
 namespace VM {
@@ -73,6 +75,7 @@ jobject StaticObjSignature::callMethod(JNIEnv* env, jclass jclazz, jobject obj, 
 
 // Handler Members
 std::string Handler::CONTRUCTOR_METHOD_NAME = "<init>";
+jint Handler::JNI_VERSION = DEFAULT_JNI_VERSION;
 
 Handler::Handler() : clazz(NULL), obj(NULL), env(env_), jvm(jvm_) {
     this->m.clear();
@@ -153,7 +156,7 @@ void Handler::createVM(std::vector<std::string> vmOption) {
         }
         options[nOptions].optionString = (char*) "-Xcheck:jni"; //-Xnoclassgc -Xcheck:jni
 
-        vm_args.version = this->JNI_VERSION;
+        vm_args.version = VM::Handler::JNI_VERSION;
         vm_args.nOptions = nOptions + 1;
         vm_args.options = options;
         vm_args.ignoreUnrecognized = JNI_FALSE;
@@ -292,18 +295,6 @@ void Converter::initConverter() {
 
 void Converter::jString(std::string str, jobject* jobj) {
     *jobj = this->env->NewStringUTF(str.c_str());
-}
-
-void Converter::jInt(int i, jint* jobj) {
-    *jobj = (jint) i;
-}
-
-void Converter::jFloat(float i, jfloat* jobj) {
-    *jobj = (jfloat) i;
-}
-
-void Converter::jDouble(double i, jdouble* jobj) {
-    *jobj = (jdouble) i;
 }
 
 int Converter::szVec(jobject jobj) {

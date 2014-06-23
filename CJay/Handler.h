@@ -127,9 +127,6 @@ class Converter : public ConverterBase {
 public:
     void initConverter();
     void jString(std::string, jobject*);
-    void jInt(int, jint*);
-    void jFloat(float, jfloat*);
-    void jDouble(double, jdouble*);
     int szVec(jobject);
     t_vec_obj toVec(jobject);
     std::string toString(jobject);
