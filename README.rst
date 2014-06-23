@@ -165,7 +165,7 @@ TODO
 
 - Add an example using a simple java class
 - Improve to the converter members, for example from Java Map to C++ Map
-- Add methods to handler class in order to acess java class variables.
+- Add methods to handler class in order to acess java class fields.
 
 Questions?
 ----------
@@ -175,4 +175,4 @@ Please hit me up at MSardelich@gmail.com
 Want to Help?
 -------------
 
-Fork and go ahead!
+Request pulls! An open source project is expected to be built using thousand hands...
