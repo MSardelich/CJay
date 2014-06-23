@@ -125,7 +125,7 @@ Implementation (Starting Out)
 
         ...
         
-        string str("edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz");
+        string str("<your_method_argument>");
         jobject jobj;
         converter.jString(str, &jobj); // convert C++ string to Java string
         handler.callClassConstructor(jobj); // call constructor
