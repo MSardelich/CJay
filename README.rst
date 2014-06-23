@@ -42,7 +42,7 @@ Implementation (Starting Out)
 
     jint VM::Handler::JNI_VERSION = JNI_VERSION_1_8;
     
-- Define Java Virtual Machine options and create it:
+- Define Java Virtual Machine path and other options and create it:
 
 .. code-block:: cpp
     
