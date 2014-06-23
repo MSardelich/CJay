@@ -21,8 +21,6 @@
 
 #include <jni.h>
 
-using namespace std;
-
 namespace VM {
 
 extern JNIEnv* env_;
@@ -30,22 +28,21 @@ extern JavaVM* jvm_;
 
 class SignatureBase {
 public:
-	static string VOID_DESCRIPTION_ENDING;
-	string descriptor;
+	static std::string VOID_DESCRIPTION_ENDING;
+	std::string descriptor;
     bool isStatic;
     bool isVoid;
     jmethodID mid;
-    //template<typename T> virtual T callMethod(JNIEnv*, jclass*, jobject*, ...) = 0;
     virtual jobject callMethod(JNIEnv*, jclass, jobject, va_list args) =0;
 
-	SignatureBase(string, bool, bool);
+	SignatureBase(std::string, bool, bool);
     SignatureBase();
     virtual ~SignatureBase();
 };
 
 class VoidSignature : public SignatureBase {
 public:
-	VoidSignature(string, bool, bool);
+	VoidSignature(std::string, bool, bool);
 	VoidSignature();
     virtual ~VoidSignature();
 
@@ -54,7 +51,7 @@ public:
 
 class StaticVoidSignature : public SignatureBase {
 public:
-	StaticVoidSignature(string, bool, bool);
+	StaticVoidSignature(std::string, bool, bool);
 	StaticVoidSignature();
     virtual ~StaticVoidSignature();
 
@@ -63,7 +60,7 @@ public:
 
 class ObjSignature : public SignatureBase {
 public:
-	ObjSignature(string, bool, bool);
+	ObjSignature(std::string, bool, bool);
 	ObjSignature();
     virtual ~ObjSignature();
 
@@ -72,41 +69,41 @@ public:
 
 class StaticObjSignature : public SignatureBase {
 public:
-	StaticObjSignature(string, bool, bool);
+	StaticObjSignature(std::string, bool, bool);
 	StaticObjSignature();
     virtual ~StaticObjSignature();
 
     jobject callMethod(JNIEnv*, jclass, jobject, va_list args);
 };
 
-typedef map<string, VM::SignatureBase*> t_signature;
+typedef std::map<std::string, VM::SignatureBase*> t_signature;
 
 class Handler {
 protected:
     t_signature m;
 
-    string className;
+    std::string className;
     jclass clazz;
     jobject obj;
 
     JNIEnv* env;
     JavaVM* jvm;
 public:
-    static string CONTRUCTOR_METHOD_NAME;
+    static std::string CONTRUCTOR_METHOD_NAME;
     static jint JNI_VERSION;
-    void setSignature(string, string, bool);
+    void setSignature(std::string, std::string, bool);
     void printSignatures();
     jclass getClass();
     jobject getObj();
     t_signature getMap();
-    string getDescriptor(string);
+    std::string getDescriptor(std::string);
     int getSizeSignatures();
-    void createVM(vector<string>);
+    void createVM(std::vector<std::string>);
     void destroyVM();
-    void setClass(string);
-    VM::SignatureBase* getSignatureObj(string);
+    void setClass(std::string);
+    VM::SignatureBase* getSignatureObj(std::string);
     void callClassConstructor_(int, ...);
-    jobject callMethod(string, ...);
+    jobject callMethod(std::string, ...);
     JNIEnv* getEnv();
     Handler();
     virtual ~Handler();
@@ -129,23 +126,23 @@ typedef std::vector<jobject> t_vec_obj;
 class Converter : public ConverterBase {
 public:
     void initConverter();
-    void jString(string, jobject*);
+    void jString(std::string, jobject*);
     void jInt(int, jint*);
     void jFloat(float, jfloat*);
     void jDouble(double, jdouble*);
     int szVec(jobject);
     t_vec_obj toVec(jobject);
-    string toString(jobject);
+    std::string toString(jobject);
     void deleteRef(jobject);
     Converter();
     ~Converter();
 };
 
-class HandlerExc: public exception {
+class HandlerExc: public std::exception {
 private:
-    string msg;
+    std::string msg;
 public:
-    HandlerExc(string m = "Uncategorized exception.") : msg(m) { }
+    HandlerExc(std::string m = "Uncategorized exception.") : msg(m) { }
     ~HandlerExc() throw() { }
     const char* what() const throw() { return msg.c_str(); }
 };
