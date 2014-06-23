@@ -84,8 +84,11 @@ Implementation (Starting Out)
 - Set the signatures you just obtained:
 
     The setSignature memebr function has the parameters:
+    
     - key (**string**). *The name of the java method.*
+    
     - descriptor (**string**). *The descriptor of the java method.*
+    
     - isStatic  (**boll**). *True if the method is static.*
 
 .. code-block:: cpp
