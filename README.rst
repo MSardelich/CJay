@@ -83,7 +83,7 @@ Implementation (Starting Out)
 
 - Set the signatures you just obtained:
 
-    The setSignature memebr function has the parameters:
+    The setSignature member function has the parameters:
     
     - key (**string**). *The name of the java method.*
     
@@ -139,6 +139,7 @@ Implementation (Starting Out)
 - Call java method:
   
     In the example below you consider a method that recieves an integer argument equal to 1 and is returns void.
+    
     **IMPORATNT:** We have only one entry point regardless the method descriptor and ``callMethod`` is a variadic member. 
 
 
