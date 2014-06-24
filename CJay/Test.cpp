@@ -5,13 +5,6 @@
  *      Author: msn
  */
 
-/*
- * StanfordAPI.cpp
- *
- *  Created on: May 23, 2014
- *      Author: msn
- */
-
 #include <iostream>
 #include <string>
 #include <exception>
@@ -24,13 +17,13 @@
 
 using namespace std;
 
-jint VM::Handler::JNI_VERSION = JNI_VERSION_1_8;
+jint VM::Handler::JNI_VERSION = JNI_VERSION_1_8; // Assign static member. Depends on doenloaded JDK
 
 int main (int argc, char* argv[]) {
     VM::Handler handler;
 
     // Set path to java classes
-    string jarsPath(getenv("CLASSPATH")); // get CLASSPATH system environment variable
+    string jarsPath(getenv("CLASSPATH")); // Get CLASSPATH system environment variable
     string paramPath = string("-Djava.class.path=") + jarsPath;
 
     vector<string> vmOption;
@@ -38,6 +31,7 @@ int main (int argc, char* argv[]) {
     vmOption.push_back("-Xcheck:jni"); // "-Xnoclassgc"
     vmOption.push_back("-ea"); // enable java assertion
 
+    // Create JVM
     try {
         handler.createVM(vmOption); // creates JVM
     }
@@ -46,6 +40,7 @@ int main (int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    // Set member signatures
     handler.setSignature( string("<init>"), string("()V"), false );
     handler.setSignature( string("parseBoolean"), string("(Z)Z"), false );
     handler.setSignature( string("parseChar"), string("(C)C"), false );
@@ -58,12 +53,15 @@ int main (int argc, char* argv[]) {
     handler.setSignature( string("parseSimpleMap"), string("(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map;"), true );
     handler.setSignature( string("parseMap"), string("([Ljava/lang/String;[I)Ljava/util/Map;"), false );
 
+    // Print signatures
     handler.printSignatures();
 
+    // Instantiate converter
     VM::Converter converter;
 
     // Set class
-    string className = "Example";
+    jobject jobj;
+    string className = "./Example";
     try {
         handler.setClass(className);
     } catch(exception& e) {
@@ -73,7 +71,6 @@ int main (int argc, char* argv[]) {
     }
 
     // Call constructor
-    jobject jobj;
     try {
         handler.callClassConstructor(NULL);
     } catch(exception& e) {
@@ -83,10 +80,9 @@ int main (int argc, char* argv[]) {
     }
 
     // Call methods
-    jobject jobj;
     try {
-        jobj = handler.callMethod("parseBoolean", (char) 'A');
-        std::assert ((char) (jchar) jobj == 'A');
+        jobj = handler.callMethod("parseBoolean", (jboolean) JNI_FALSE);
+        //assert (*jobj == 'A');
     } catch(exception& e) {
         cout << e.what() << endl;
         handler.destroyVM();

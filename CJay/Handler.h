@@ -83,9 +83,9 @@ protected:
     t_signature m;
 
     std::string className;
+
     jclass clazz;
     jobject obj;
-
     JNIEnv* env;
     JavaVM* jvm;
 public:
@@ -109,10 +109,11 @@ public:
     virtual ~Handler();
 };
 
-
 class ConverterBase {
 protected:
-    Handler CONVERTER;
+    Handler ARRAYLIST;
+    Handler MAP;
+
     JNIEnv* env;
     JavaVM* jvm;
 public:

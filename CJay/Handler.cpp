@@ -75,7 +75,6 @@ jobject StaticObjSignature::callMethod(JNIEnv* env, jclass jclazz, jobject obj, 
 
 // Handler Members
 std::string Handler::CONTRUCTOR_METHOD_NAME = "<init>";
-jint Handler::JNI_VERSION = DEFAULT_JNI_VERSION;
 
 Handler::Handler() : clazz(NULL), obj(NULL), env(env_), jvm(jvm_) {
     this->m.clear();
@@ -149,15 +148,14 @@ void Handler::createVM(std::vector<std::string> vmOption) {
         int nOptions = vmOption.size();
 
         JavaVMInitArgs vm_args;
-        JavaVMOption* options = new JavaVMOption[nOptions + 1];
+        JavaVMOption* options = new JavaVMOption[nOptions];
 
         for (std::vector<std::string>::iterator it = vmOption.begin(); it != vmOption.end(); ++it) {
             options[it-vmOption.begin()].optionString = (char*) it->c_str();
         }
-        options[nOptions].optionString = (char*) "-Xcheck:jni"; //-Xnoclassgc -Xcheck:jni
 
         vm_args.version = VM::Handler::JNI_VERSION;
-        vm_args.nOptions = nOptions + 1;
+        vm_args.nOptions = nOptions;
         vm_args.options = options;
         vm_args.ignoreUnrecognized = JNI_FALSE;
         int status = JNI_CreateJavaVM(&jvm_, (void**)&env_, &vm_args); // create only once with global variables
@@ -190,7 +188,7 @@ void Handler::setClass(std::string className) {
         if (exc) {
             env->ExceptionDescribe();
             env->ExceptionClear();
-            throw HandlerExc("");
+            throw HandlerExc("Just a test");
         }
     }
 
@@ -271,8 +269,11 @@ JNIEnv* Handler::getEnv() {
 
 // SuperClass ConverterBase Members
 ConverterBase::ConverterBase() : env(env_), jvm(jvm_) {
-    Handler convHandler;
-    this->CONVERTER = convHandler;
+    Handler convARRAYLIST;
+    Handler convMAP;
+
+    this->ARRAYLIST = convARRAYLIST;
+    this->MAP = convMAP;
 }
 
 ConverterBase::~ConverterBase() { }
@@ -286,11 +287,12 @@ Converter::~Converter() {
 }
 
 void Converter::initConverter() {
-    CONVERTER.setSignature( std::string("toString"), std::string("()Ljava/lang/std::string;"), false );
-    CONVERTER.setSignature( std::string("get"), std::string("(I)Ljava/lang/Object;"), false );
-    CONVERTER.setSignature( std::string("size"), std::string("()I"), false );
+    ARRAYLIST.setSignature( std::string("toString"), std::string("()Ljava/lang/String;"), false );
+    ARRAYLIST.setSignature( std::string("get"), std::string("(I)Ljava/lang/Object;"), false );
+    ARRAYLIST.setSignature( std::string("size"), std::string("()I"), false );
+    ARRAYLIST.setClass("java/util/ArrayList");
 
-    CONVERTER.setClass("java/util/ArrayList");
+    //MAP.setClass("java/util/Map");
 }
 
 void Converter::jString(std::string str, jobject* jobj) {
@@ -299,10 +301,10 @@ void Converter::jString(std::string str, jobject* jobj) {
 
 int Converter::szVec(jobject jobj) {
     std::string METHOD_NAME("size");
-    VM::SignatureBase* signatureObj = CONVERTER.getSignatureObj(METHOD_NAME);
+    VM::SignatureBase* signatureObj = ARRAYLIST.getSignatureObj(METHOD_NAME);
     jobject jobj_;
 
-    jobj_ = signatureObj->callMethod(this->env, CONVERTER.getClass(), jobj, NULL);
+    jobj_ = signatureObj->callMethod(this->env, ARRAYLIST.getClass(), jobj, NULL);
 
     return (int) (jint) jobj_;
 }
@@ -322,13 +324,13 @@ inline jobject WRAPPER_METHODV(JNIEnv* env, VM::SignatureBase* signatureObj, jcl
 
 t_vec_obj Converter::toVec(jobject jobj) {
     std::string METHOD_NAME("get");
-    VM::SignatureBase* signatureObj = CONVERTER.getSignatureObj(METHOD_NAME);
+    VM::SignatureBase* signatureObj = ARRAYLIST.getSignatureObj(METHOD_NAME);
     t_vec_obj cppVec;
     jobject elem;
     int size = this->szVec(jobj);
 
     for (int i = 0 ; i < size ; i++) {
-        elem = WRAPPER_METHODV(this->env, signatureObj, CONVERTER.getClass(), jobj, (jint) i);
+        elem = WRAPPER_METHODV(this->env, signatureObj, ARRAYLIST.getClass(), jobj, (jint) i);
         cppVec.push_back(elem);
     }
 
