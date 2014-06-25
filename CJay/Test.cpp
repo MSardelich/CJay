@@ -43,7 +43,9 @@ int main (int argc, char* argv[]) {
     // Set member signatures
     handler.setSignature( string("<init>"), string("()V"), false );
     handler.setSignature( string("parseBoolean"), string("(Z)Z"), false );
+    handler.setSignature( string("parseByte"), string("(B)B"), false );
     handler.setSignature( string("parseChar"), string("(C)C"), false );
+    handler.setSignature( string("parseShort"), string("(S)S"), false );
     handler.setSignature( string("parseInt"), string("(I)I"), false );
     handler.setSignature( string("parseLong"), string("(J)J"), false );
     handler.setSignature( string("parseFloat"), string("(F)F"), false );
@@ -57,11 +59,10 @@ int main (int argc, char* argv[]) {
     handler.printSignatures();
 
     // Instantiate converter
-    VM::Converter converter;
+    VM::Converter cnv;
 
     // Set class
-    jobject jobj;
-    string className = "./Example";
+    string className = "example/Example";
     try {
         handler.setClass(className);
     } catch(exception& e) {
@@ -79,39 +80,47 @@ int main (int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // Call methods
+    // Assertions
+    jobject jobj; _jobject
     try {
-        jobj = handler.callMethod("parseBoolean", (jboolean) JNI_FALSE);
-        //assert (*jobj == 'A');
-    } catch(exception& e) {
-        cout << e.what() << endl;
-        handler.destroyVM();
-        return EXIT_FAILURE;
-   }
-/*
-   methodName.assign("getTokens");
-   VM::t_vec_obj v_outter, v_inner;
-   vector<vector<string>> vv;
-   vector<string> v;
-   try {
-        jobj = handler.callMethod(methodName, NULL); // return jobj == ArrayList<ArrayList<String>>
-        v_outter = converter.toVec(jobj);
-        vv.clear();
-        for (auto elem_outter : v_outter) {
-            v_inner = converter.toVec(elem_outter);
-            v.clear();
-            for (auto elem_inner: v_inner) { v.push_back(converter.toString(elem_inner)); }
-            cout << v << endl;
-            vv.push_back(v);
-        }
+        jobj = handler.callMethod( "parseBoolean", cnv.j_cast<jboolean>(false) );
+        assert ((bool) jobj == false);
+        jobj = handler.callMethod( "parseByte", cnv.j_cast<jbyte>(123) );
+        assert ((jint) jobj == 123);
+        jobj = handler.callMethod( "parseChar", cnv.j_cast<jchar>('a') ); // single 16-bit unicode
+        assert ((jint) jobj == (__int64) 'a');
+        jobj = handler.callMethod( "parseShort", cnv.j_cast<jshort>((short) -123) );
+        assert ((jint) jobj == -123); // coversion to int avoids lost precision
+        jobj = handler.callMethod("parseInt", cnv.j_cast<jint>(123) );
+        assert ((jint) jobj == 123);
+        jobj = handler.callMethod( "parseLong", cnv.j_cast<jlong>((long long) 123) );
+        assert ((jlong) jobj == 123);
+        jobj = handler.callMethod( "parseFloat", cnv.j_cast<jfloat>((float) 123.0) );
+        jfloat test_conv = (jfloat) (jobj);
+
+        /*
+        Test jfloat directly
+        JNIEnv* env = handler.getEnv();
+        jmethodID mid = handler.getMid("parseFloat");
+        jobject jobj = handler.getObj();
+        jfloat res = env->CallFloatMethod( jobj, mid, cnv.j_cast<jfloat>((float) 123.0) );
+        */
+
+        //assert ((float) jobj == 123.0);
+        jobj = handler.callMethod( "parseDouble", cnv.j_cast<jdouble>((double) 123.0) );
+        //assert ((double) jobj == (double) 123.0);
+        jobj = handler.callMethod( "parseString", cnv.j_cast<jstring>("CJay is cool!") );
+        //assert (())
+        jobj = handler.callMethod( "parseArray", cnv.j_cast<jint>(123), cnv.j_cast<jint>(456) );
+        VM::vec_jobj v_jobj = cnv.toVec<jobject>(jobj);
+        vector<int> v = cnv.toVec<int>(jobj);
     } catch(exception& e) {
         cout << e.what() << endl;
         handler.destroyVM();
         return EXIT_FAILURE;
     }
-*/
+
+    handler.destroyVM();
+
     return EXIT_SUCCESS;
 }
-
-
-

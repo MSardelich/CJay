@@ -30,7 +30,6 @@ jobject VoidSignature::callMethod(JNIEnv* env, jclass jclazz, jobject obj, va_li
     jobject jobj;
 
     env->CallVoidMethodV(obj, this->mid, args);
-
     jobj = NULL;
     return jobj;
 }
@@ -81,8 +80,11 @@ Handler::Handler() : clazz(NULL), obj(NULL), env(env_), jvm(jvm_) {
 }
 
 Handler::~Handler() {
-    delete jvm;
-    delete env;
+    // avoid memory leaks
+    for (auto& kv : this->m) {
+        delete kv.second;
+        kv.second = NULL;
+    }
 }
 
 void Handler::setSignature(std::string key, std::string descriptor, bool isStatic) {
@@ -137,6 +139,10 @@ t_signature Handler::getMap() {
 
 std::string Handler::getDescriptor(std::string key) {
     return this->getSignatureObj(key)->descriptor;
+}
+
+jmethodID Handler::getMid(std::string key) {
+    return this->getSignatureObj(key)->mid;
 }
 
 int Handler::getSizeSignatures() {
@@ -203,8 +209,6 @@ void Handler::setClass(std::string className) {
         } else {
         	mid = this->env->GetMethodID(this->clazz, key.c_str(), obj->descriptor.c_str());
         }
-        //mid = ( (this->env)->*ptrGetMethod )(this->clazz, key.c_str(), obj.descriptor.c_str());
-        // check consistency
         if (mid == NULL) {
             jthrowable exc;
             exc = env->ExceptionOccurred();
@@ -269,11 +273,13 @@ JNIEnv* Handler::getEnv() {
 
 // SuperClass ConverterBase Members
 ConverterBase::ConverterBase() : env(env_), jvm(jvm_) {
+/*
     Handler convARRAYLIST;
     Handler convMAP;
 
     this->ARRAYLIST = convARRAYLIST;
     this->MAP = convMAP;
+    */
 }
 
 ConverterBase::~ConverterBase() { }
@@ -282,8 +288,12 @@ ConverterBase::~ConverterBase() { }
 */
 Converter::Converter(): ConverterBase() { this->initConverter(); }
 Converter::~Converter() {
-    delete env;
-    delete jvm;
+    /*
+    // avoid memory leaks
+    this->ARRAYLIST.~Handler();
+    //this->MAP.~Handler();
+     *
+     */
 }
 
 void Converter::initConverter() {
@@ -295,10 +305,86 @@ void Converter::initConverter() {
     //MAP.setClass("java/util/Map");
 }
 
+template <> jbyte Converter::j_cast(int x) {
+    // signed 8 bits | min: 128 max: 127
+    return (jbyte) x;
+}
+
+template <> jshort Converter::j_cast(short x) {
+    // signed 16 bits | min: -32,768 max: 32,767
+    return (jshort) x;
+}
+
+
+template <> jint Converter::j_cast(int x) {
+    // signed 32 bits | min: -2^31 max: 2^31-1
+    return (jint) x;
+}
+
+template <> jint Converter::j_cast(long x) {
+    // signed 32 bits | min: -2^31 max: 2^31-1
+    return (jint) x;
+}
+
+template <> jlong Converter::j_cast(long long x) {
+    // signed 64 bits | min: -2^63 max: 2^63-1
+    return (jlong) x;
+}
+
+template <> jfloat Converter::j_cast(float x) {
+    // single-precision 32-bit IEEE 754 floating point
+    return (jfloat) x;
+}
+
+template <> jdouble Converter::j_cast(double x) {
+    // single-precision 64-bit IEEE 754 floating point
+    return (jdouble) x;
+}
+
+template <> jboolean Converter::j_cast(bool x) {
+    return (jboolean) x;
+}
+
+template <> jchar Converter::j_cast(char x) {
+    // single 16-bit Unicode character.
+    // minimum value of '\u0000' (or 0) and a maximum value of '\uffff' (or 65,535 inclusive)
+    return (jchar) x;
+}
+
+template <> jstring Converter::j_cast(std::string str) {
+    return this->env->NewStringUTF(str.c_str());
+}
+
+template <> jstring Converter::j_cast(const char* str) {
+    return this->env->NewStringUTF(str);
+}
+
+/*
+template <> vec_jobj Converter::c_cast(jobject jobj) {
+    vec_jobj v_jobj;
+    v_jobj = this->toVecObject(jobj);
+
+    return v_jobj;
+}
+*/
+
+/*
+template <> std::vector<int> Converter::c_cast(jobject jobj) {
+    vec_jobj v_jobj;
+    v_jobj = this->toVecObject(jobj);
+    std::vector<int> v;
+    for (jobject& elem : v_jobj){
+        v.push_back( (int) elem ); // cast
+    }
+
+    return v;
+}
+*/
+/*
 void Converter::jString(std::string str, jobject* jobj) {
     *jobj = this->env->NewStringUTF(str.c_str());
 }
-
+*/
 int Converter::szVec(jobject jobj) {
     std::string METHOD_NAME("size");
     VM::SignatureBase* signatureObj = ARRAYLIST.getSignatureObj(METHOD_NAME);
@@ -322,10 +408,10 @@ inline jobject WRAPPER_METHODV(JNIEnv* env, VM::SignatureBase* signatureObj, jcl
     return jresult;
 }
 
-t_vec_obj Converter::toVec(jobject jobj) {
+vec_jobj Converter::toVecObject(jobject jobj) {
     std::string METHOD_NAME("get");
     VM::SignatureBase* signatureObj = ARRAYLIST.getSignatureObj(METHOD_NAME);
-    t_vec_obj cppVec;
+    vec_jobj cppVec;
     jobject elem;
     int size = this->szVec(jobj);
 
@@ -337,10 +423,25 @@ t_vec_obj Converter::toVec(jobject jobj) {
     return cppVec;
 }
 
+template <> std::vector<jobject> Converter::toVec(jobject jobj) {
+    return this->toVecObject(jobj);
+}
+
+template <> std::vector<int> Converter::toVec(jobject jobj) {
+    vec_jobj v_jobj = this->toVecObject(jobj);
+    std::vector<int> v;
+    for (auto& elem : v_jobj) {
+        v.push_back( (int) elem ); // cast
+    }
+
+    return v;
+}
+
+/*
 std::string Converter::toString(jobject jobj) {
     return this->env->GetStringUTFChars((jstring) jobj, 0);
 }
-
+*/
 void Converter::deleteRef(jobject jobj) {
     this->env->DeleteLocalRef(jobj);
 }

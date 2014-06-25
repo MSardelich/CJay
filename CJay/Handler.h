@@ -26,6 +26,8 @@ namespace VM {
 extern JNIEnv* env_;
 extern JavaVM* jvm_;
 
+typedef long clong;
+
 class SignatureBase {
 public:
 	static std::string VOID_DESCRIPTION_ENDING;
@@ -34,8 +36,7 @@ public:
     bool isVoid;
     jmethodID mid;
     virtual jobject callMethod(JNIEnv*, jclass, jobject, va_list args) =0;
-
-	SignatureBase(std::string, bool, bool);
+    SignatureBase(std::string, bool, bool);
     SignatureBase();
     virtual ~SignatureBase();
 };
@@ -97,6 +98,7 @@ public:
     jobject getObj();
     t_signature getMap();
     std::string getDescriptor(std::string);
+    jmethodID getMid(std::string);
     int getSizeSignatures();
     void createVM(std::vector<std::string>);
     void destroyVM();
@@ -122,15 +124,18 @@ public:
     virtual ~ConverterBase();
 };
 
-typedef std::vector<jobject> t_vec_obj;
+typedef std::vector<jobject> vec_jobj;
 
 class Converter : public ConverterBase {
 public:
     void initConverter();
-    void jString(std::string, jobject*);
+    template <typename To, typename From> To j_cast(From);
+    //template <typename To, typename From> To c_cast(From);
+    //void jString(std::string, jobject*);
     int szVec(jobject);
-    t_vec_obj toVec(jobject);
-    std::string toString(jobject);
+    vec_jobj toVecObject(jobject);
+    template <typename To> std::vector<To> toVec(jobject);
+    //std::string toString(jobject);
     void deleteRef(jobject);
     Converter();
     ~Converter();
