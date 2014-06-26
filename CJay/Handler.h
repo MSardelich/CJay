@@ -1,5 +1,5 @@
 /*
- * Handler.h
+ * CJ.h
  *
  *  Created on: May 30, 2014
  *      Author: msn
@@ -23,80 +23,52 @@
 
 namespace VM {
 
-extern JNIEnv* env_;
-extern JavaVM* jvm_;
+enum class RV {
+    Z, // jboolean
+    B, // jbyte
+    C, // jchar
+    S, // jshort
+    I, // jint
+    J, // jlong
+    F, // jfloat
+    D, // jdouble
+    L, // jobject
+    VV // VOID
+};
+
+extern JNIEnv* env;
+extern JavaVM* jvm;
 
 typedef long clong;
 
 class SignatureBase {
 public:
-	static std::string VOID_DESCRIPTION_ENDING;
 	std::string descriptor;
     bool isStatic;
-    bool isVoid;
+    RV rv;
     jmethodID mid;
-    virtual jobject callMethod(JNIEnv*, jclass, jobject, va_list args) =0;
-    SignatureBase(std::string, bool, bool);
+    SignatureBase(std::string, bool, const char*);
     SignatureBase();
     virtual ~SignatureBase();
 };
 
-class VoidSignature : public SignatureBase {
-public:
-	VoidSignature(std::string, bool, bool);
-	VoidSignature();
-    virtual ~VoidSignature();
+typedef std::map<std::string, VM::SignatureBase*> signature_t;
 
-    jobject callMethod(JNIEnv*, jclass, jobject, va_list args);
-};
-
-class StaticVoidSignature : public SignatureBase {
-public:
-	StaticVoidSignature(std::string, bool, bool);
-	StaticVoidSignature();
-    virtual ~StaticVoidSignature();
-
-    jobject callMethod(JNIEnv*, jclass, jobject, va_list args);
-};
-
-class ObjSignature : public SignatureBase {
-public:
-	ObjSignature(std::string, bool, bool);
-	ObjSignature();
-    virtual ~ObjSignature();
-
-    jobject callMethod(JNIEnv*, jclass, jobject, va_list args);
-};
-
-class StaticObjSignature : public SignatureBase {
-public:
-	StaticObjSignature(std::string, bool, bool);
-	StaticObjSignature();
-    virtual ~StaticObjSignature();
-
-    jobject callMethod(JNIEnv*, jclass, jobject, va_list args);
-};
-
-typedef std::map<std::string, VM::SignatureBase*> t_signature;
-
-class Handler {
+class CJ {
 protected:
-    t_signature m;
+    signature_t m;
 
     std::string className;
 
     jclass clazz;
     jobject obj;
-    JNIEnv* env;
-    JavaVM* jvm;
 public:
-    static std::string CONTRUCTOR_METHOD_NAME;
     static jint JNI_VERSION;
     void setSignature(std::string, std::string, bool);
     void printSignatures();
     jclass getClass();
     jobject getObj();
-    t_signature getMap();
+    signature_t getMap();
     std::string getDescriptor(std::string);
     jmethodID getMid(std::string);
     int getSizeSignatures();
@@ -105,21 +77,22 @@ public:
     void setClass(std::string);
     VM::SignatureBase* getSignatureObj(std::string);
     void callClassConstructor_(int, ...);
-    jobject callMethod(std::string, ...);
+    //jobject callMethod(std::string, ...);
+    template <typename To> To call(std::string, ...);
     JNIEnv* getEnv();
-    Handler();
-    virtual ~Handler();
+    CJ();
+    virtual ~CJ();
 };
 
 class ConverterBase {
 protected:
-    Handler ARRAYLIST;
-    Handler MAP;
-
-    JNIEnv* env;
-    JavaVM* jvm;
+    CJ ARRAYLIST;
+    CJ MAP;
+    CJ NUMBER;
+    virtual void initARRAYLIST() = 0;
+    virtual void initMAP() = 0;
+    virtual void initNUMBER() = 0;
 public:
-    virtual void initConverter() = 0;
     ConverterBase();
     virtual ~ConverterBase();
 };
@@ -127,15 +100,18 @@ public:
 typedef std::vector<jobject> vec_jobj;
 
 class Converter : public ConverterBase {
+protected:
+    void initARRAYLIST();
+    void initMAP();
+    void initNUMBER();
+    void init();
 public:
-    void initConverter();
     template <typename To, typename From> To j_cast(From);
-    //template <typename To, typename From> To c_cast(From);
-    //void jString(std::string, jobject*);
-    int szVec(jobject);
-    vec_jobj toVecObject(jobject);
-    template <typename To> std::vector<To> toVec(jobject);
-    //std::string toString(jobject);
+    template <typename To> To c_cast(jobject);
+    template <typename To> std::vector<To> c_cast_number(jobject);
+    template <typename To> std::vector<To> c_cast_vector(jobject);
+    template <typename To> std::vector<To> c_cast_vector(jobject, int);
+    int sizeVector(jobject);
     void deleteRef(jobject);
     Converter();
     ~Converter();
