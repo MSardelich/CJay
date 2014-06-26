@@ -116,10 +116,9 @@ int main (int argc, char* argv[]) {
         assert ( str == std::string("CJay is cool!") );
 
         L = CJ.call<jobject>( "parseArray", cnv.j_cast<jint>(123), cnv.j_cast<jint>(456) );
-        //std::vector<int> v = cnv.toVec<int>(L, 2); // covert to vector<int> (fully unwrapped)
-        std::vector<int> v = cnv.c_cast_vector<int>(L);
+        //std::vector<int> v = cnv.toVec<int>(L, 2);
+        std::vector<int> v = cnv.c_cast_vector<int>(L); // cast to vector<int> ('v' now is fully unwrapped)
         // or directly: std::vector<int> v = cnv.toVec<int>(L);
-        std::cout << v[0] << v[1] << std::endl;
         assert ( v[0] == 123 ); assert( v[1] == 456 );
 
     } catch(std::exception& e) {
