@@ -6,10 +6,10 @@ CJay
 Why?
 ----
 
-- Although ``JNI`` is a mature library its method caller entry points depend on the method description/signature i.e ``CallStaticVoidMethod``, ``CallVoidMethod``, ``CallObjectMethod`` and others. ``Cjay``, on the other hand, has a ``Conevrsion`` class with only one entry point, the ``call`` member function.
+- Although ``JNI`` is a mature library its method caller entry points depend on the method description/signature i.e ``CallStaticVoidMethod``, ``CallVoidMethod``, ``CallObjectMethod`` and others. ``Cjay``, on the other hand, has a ``Conevrsion`` class with only one entry point, the ``call<T>`` member function.
 - ``CJay`` has a conversion class to convert from C++ to java and *vice versa*.
-- The conversion class can for exmaple convert from Java ``Arraylist<T>`` class to C++ ``Vector<T>`` class directly, see templated ``c_cast`` member function.
-- Regiter your Java methods only once, use them around the code.
+- The conversion class can for exmaple convert from Java ``Arraylist<T>`` class to C++ ``Vector<T>`` class directly, see ``c_cast<T>`` member function.
+- Register your Java methods only once, use them around the code.
 - You can still call native ``JNI`` functions. Just get the enviroment pointer ``CJ::env``.
 - Only one header file: ``Cjay.hpp``
 - An exception handler with clear and informative error messages.
@@ -44,7 +44,7 @@ Implementation (Starting Out)
 
     jint VM::CJ::JNI_VERSION = JNI_VERSION_1_8;
     
-- Define Java Virtual Machine path and other options and create it:
+- Assign Java Virtual Machine path and other options. Create Java Virtual Machine:
 
 .. code-block:: cpp
     
@@ -74,7 +74,7 @@ Implementation (Starting Out)
 
 .. code-block:: bash
 
-    $ javap -s -p <*your_java_class*>.class
+    $ javap -s -p <your_java_class>.class
 
 - Set the signatures you just obtained:
 
@@ -90,8 +90,8 @@ Implementation (Starting Out)
     
     ...
     
-    handler.setSignature( string("<init>"), string("<constructor_descriptor>"), false ); // <init> MUST be the name of the class constructor 
-    handler.setSignature( string("<merthod_name>"), string("<merthod_descriptor>"), false ); // add each method you want to call
+    CJ.setSignature( string("<init>"), string("<constructor_descriptor>"), false ); // <init> MUST be the name of the class constructor 
+    CJ.setSignature( string("<merthod_name>"), string("<merthod_descriptor>"), false ); // add each method you want to call
     
     ...
 
@@ -108,7 +108,7 @@ Implementation (Starting Out)
     
 - Call java class constructor:
 
-    In the example below we consider a class constructor that recieves a Java ``string`` as argument.
+    In the example below we consider a class method that recieves a Java ``string`` as argument.
     In order to create a Java ``string`` (``java.lang.String``) we need to instantiate a ``conveter``.
 
 .. code-block:: cpp
@@ -126,14 +126,16 @@ Implementation (Starting Out)
   
     In the example below we consider a java method ``parseString`` that recieves type ``java.lang.String`` and returns ``java.lang.String``.
     
-    **IMPORATNT:** We have only one entry point, regardless the method descriptor, and ``call`` is a variadic member. It is temaplted based on the method return value.
+    **IMPORATNT:** We have only one entry point, regardless the method descriptor, and ``call<T>`` is a variadic member. It is temaplted based on the method return value.
 
 .. code-block:: cpp
 
     ...
+
     jobject L = CJ.call<jobject>( "parseString", cnv.j_cast<jstring>("foo") ); // Call java method. Cast FROM C++ string TO java.lang.String (j_cast)
     std::string str = cnv.c_cast<std::string>(L); // Now, cast back: FROM java.lang.String TO C++ string (c_cast)
     assert ( str == std::string("foo") );
+
     ...
 
 - Destroy JVM when your are done
@@ -142,8 +144,8 @@ Implementation (Starting Out)
 
     CJ.destroyVM();
 
-UNITTEST
---------
+Unit test
+---------
 
 Run UnitTest.cpp.
 
@@ -152,7 +154,7 @@ The source code exaustevely cover many methods with differente signatures. Maybe
 TODO
 ----
 
-- Improve ``Converter`` class, inclusing, for example a caster from ``java.util.Map<T>`` to C++ ``Map<T>``
+- Improve ``Converter`` class, including, for example, a caster from ``java.util.Map<T>`` to C++ ``Map<T>``
 - Add methods to main ``CJ`` class in order to acess java class fields.
 
 Questions?
@@ -167,6 +169,10 @@ Request pulls! An open source project is expected to be built using thousand han
 
 License
 -------
+
+``CJay`` is licensed under `Apache Version 2.0 <http://www.apache.org/licenses/>`_.
+
+.. code::
 
 Copyright (c) 2014, Marcelo Sardelich
 
