@@ -1,18 +1,19 @@
-CJay
-====
+CJay -- Java Native Interface made easy
+=======================================
 
-``Cjay`` is a C++ class abstraction to Java Native Interface (``JNI``). It seamlessly integrates Java class libraries (here the "jay") into C++.
+Seamlessly calls Java classes (here the "*jay*") from C++. A C++ library with abstracts the use of Java Native Interface (``JNI``).
 
 Why?
 ----
 
-- Although ``JNI`` is a mature library its method caller entry points depend on the method description/signature i.e ``CallStaticVoidMethod``, ``CallVoidMethod``, ``CallObjectMethod`` and others. ``Cjay``, on the other hand, has a ``CJ`` class with only one entry point, the ``call<T>`` member function.
-- ``CJay`` has a conversion class to convert from C++ to java and *vice versa*.
-- The conversion class can for exmaple convert from Java ``Arraylist<T>`` class to C++ ``Vector<T>`` class directly, see ``c_cast<T>`` member function.
-- Register your Java methods only once, use them around the code.
-- You can still call native ``JNI`` functions. Just get the enviroment pointer ``CJ::env``.
-- Only one header file: ``Cjay.hpp``
-- An exception handler with clear and informative error messages.
+* Although ``JNI`` is a mature library its method caller entry points depend on the method description/signature i.e ``CallStaticVoidMethod``, ``CallVoidMethod``, ``CallObjectMethod``, ...
+  On the other hand, ``CJay`` has a call method (``CJ::call<T>``) with only one entry point.
+* ``CJay`` has a conversion class to convert from C++ to java and *vice versa*.
+* The conversion class can for exmaple convert from Java ``Arraylist<T>`` class to C++ ``Vector<T>`` class directly, see ``c_cast<T>`` member function.
+* Register your Java methods only once, use them around the code.
+* You can still call native ``JNI`` functions. Just get the enviroment pointer ``CJ::env``.
+* Only one header file: ``Cjay.hpp``
+* An exception handler with clear and informative error messages.
 
 Compiler, Linker and System Variables
 -------------------------------------
