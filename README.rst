@@ -34,19 +34,19 @@ Implementation (Starting Out)
 
 - Include library header file (only one):
 
-    .. code-block:: cpp
+   .. code-block:: cpp
 
     #include "Cjay.hpp"
 
 - Assign ``JNI_VERSION`` variable (it must be compatible with the versions described in your ``<jni.h>``). For example (version 1.8):
 
-.. code-block:: cpp
+   .. code-block:: cpp
 
     jint VM::CJ::JNI_VERSION = JNI_VERSION_1_8;
     
 - Assign Java Virtual Machine path and other options. Create Java Virtual Machine:
 
-.. code-block:: cpp
+   .. code-block:: cpp
     
     using namespace VM;
     
@@ -72,7 +72,7 @@ Implementation (Starting Out)
 
 - Obtain the signatures/descriptions of your java class:
 
-.. code-block:: bash
+   .. code-block:: bash
 
     $ javap -s -p <your_java_class>.class
 
@@ -86,7 +86,7 @@ Implementation (Starting Out)
     
     - isStatic  (**boll**). *True if the method is static.*
 
-.. code-block:: cpp
+   .. code-block:: cpp
     
     ...
     
@@ -97,7 +97,7 @@ Implementation (Starting Out)
 
 - Set the java class:
 
-.. code-block:: cpp
+   .. code-block:: cpp
     
     ...
     
@@ -111,7 +111,7 @@ Implementation (Starting Out)
     In the example below we consider a class method that recieves a Java ``string`` as argument.
     In order to create a Java ``string`` (``java.lang.String``) we need to instantiate a ``conveter``.
 
-.. code-block:: cpp
+   .. code-block:: cpp
     
     ...
     
@@ -129,7 +129,7 @@ Implementation (Starting Out)
     
     **IMPORATNT:** We have only one entry point, regardless the method descriptor, and ``call<T>`` is a variadic member. It is temaplted based on the method return value.
 
-.. code-block:: cpp
+   .. code-block:: cpp
 
     ...
 
@@ -141,7 +141,7 @@ Implementation (Starting Out)
 
 - Destroy JVM when your are done
 
-.. code-block:: cpp
+   .. code-block:: cpp
 
     CJ.destroyVM();
 
