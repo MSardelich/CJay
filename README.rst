@@ -34,7 +34,7 @@ Implementation (Starting Out)
 
 - Include library header file (only one):
 
-.. code-block:: cpp
+   .. code-block:: cpp
 
     #include "Cjay.hpp"
 
@@ -112,6 +112,7 @@ Implementation (Starting Out)
     In order to create a Java ``string`` (``java.lang.String``) we need to instantiate a ``conveter``.
 
 .. code-block:: cpp
+    
     ...
     
     // Instantiate converter
@@ -147,7 +148,7 @@ Implementation (Starting Out)
 Unit test
 ---------
 
-Run UnitTest.cpp.
+Run ``UnitTest.cpp``.
 
 The source code exaustevely cover many methods with differente signatures. Maybe it is the best way to understand the seamless integration of ``CJay`` library.
 
