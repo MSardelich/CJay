@@ -88,14 +88,14 @@ A standard implementation should follow the steps below.
   * isStatic  (**boll**). *True if the method is static.*
 
   ```cpp
-  CJ.setSignature( std::string("<init>"), std::string("<constructor_descriptor>"), false ); // <init> MUST be the name of the class constructor 
-  CJ.setSignature( std::string("<merthod_name>"), std::string("<merthod_descriptor>"), false ); // add each method you want to call
+  CJ.setSignature( "<init>", "<constructor_descriptor>", false ); // the method name of constructor is always <init>. 
+  CJ.setSignature( "<merthod_name>", "<merthod_descriptor>", false ); // add each method you want to call.
   ```
 
 - Load/Set the java class:
 
   ```cpp
-  CJ.setClass( std::string("<your_class_name>") );
+  CJ.setClass( "<your_class_name>" );
   ```
 
 * Call java class constructor (if you have to call non-static methods):
