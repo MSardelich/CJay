@@ -34,7 +34,7 @@ Implementation (Starting Out)
 
 - Include library header file (only one):
 
-   .. code-block:: cpp
+    .. code-block:: cpp
 
     #include "Cjay.hpp"
 
