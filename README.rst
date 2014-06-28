@@ -124,7 +124,7 @@ Implementation (Starting Out)
 
 - Call java method:
   
-    In the example below we consider a java method that recieves ``java.lang.String`` argument and returns ``java.lang.String``.
+    In the example below we consider a java method ``parseString`` that recieves type ``java.lang.String`` and returns ``java.lang.String``.
     
     **IMPORATNT:** We have only one entry point, regardless the method descriptor, and ``call`` is a variadic member. It is temaplted based on the method return value.
 
@@ -147,7 +147,7 @@ UNITTEST
 
 Run UnitTest.cpp.
 
-The source code exaustevely cover many methods with differente signatures. Maybe it is the best way to understand the seamless intration of ``CJay`` library. 
+The source code exaustevely cover many methods with differente signatures. Maybe it is the best way to understand the seamless integration of ``CJay`` library.
 
 TODO
 ----
