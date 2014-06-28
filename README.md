@@ -1,17 +1,17 @@
 CJay -- Java Native Interface made easy
 =======================================
 
-Seamlessly calls Java classes (here the "*jay*") from C++. A C++ library with abstracts the use of Java Native Interface (``JNI``).
+Seamlessly calls Java classes (here the "*jay*") from C++. The ``Cjay`` library abstracts the use of Java Native Interface (``JNI``).
 
 Why?
 ----
 
 * Although ``JNI`` is a mature library its method caller entry points depend on the method description/signature i.e ``CallStaticVoidMethod``, ``CallVoidMethod``, ``CallObjectMethod``, ...
   On the other hand, ``CJay`` has a call method (``CJ::call<T>``) with only one entry point.
-* ``CJay`` has a conversion class to convert from C++ to java and *vice versa*.
-* The conversion class can for exmaple convert from Java ``Arraylist<T>`` class to C++ ``Vector<T>`` class directly, see ``c_cast<T>`` member function.
+* ``CJay`` has a conversion class ``Convert`` that easy cast types from C++ to Java and *vice versa*.
+* The conversion class can for exmaple can convert from Java ``Arraylist<T>`` to C++ ``Vector<T>`` directly, see for example ``CJ::c_cast_vector<T>`` and ``CJ::c_cast<T>`` for primitive types.
 * Register your Java methods only once, use them around the code.
-* You can still call native ``JNI`` functions. Just get the enviroment pointer ``CJ::env``.
+* You can still call native ``JNI`` functions. Just get the JVM enviroment pointer: ``CJ::env``.
 * Only one header file: ``Cjay.hpp``
 * An exception handler with clear and informative error messages.
 
@@ -45,7 +45,7 @@ A standard implementation should follow the steps below.
   jint VM::CJ::JNI_VERSION = JNI_VERSION_1_8;
   ```
 
-* Assign Java Virtual Machine path and other options. Create Java Virtual Machine:
+* Assign JVM path, additional flags and create JVM:
 
   ```cpp
   using namespace VM;
