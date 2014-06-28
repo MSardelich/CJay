@@ -125,7 +125,6 @@ int main (int argc, char* argv[]) {
 
         L = CJ.call<jobject>( "parseArrayListByte", (jbyte) 123, (jbyte) -123 );
         std::vector<jbyte> vb = cnv.c_cast_vector<jbyte>(L, 2); // From java.lang.ArrayList<byte> To vector<jbyte> (or vector<signed char>)
-        std::cout << (int) vb[0] << " " << (int) vb[1] << std::endl;
         assert ( (int) vb[0] == 123 ); assert( (int) vb[1] == -123 ); // convert signed char to int
 
         L = CJ.call<jobject>( "parseArrayListInteger", (jint) 123, (jint) 456 );

@@ -101,7 +101,7 @@ A standard implementation should follow the steps below.
 * Call java class constructor (if you have to call non-static methods):
 
   In the example below we consider a class method that recieves a Java ``string`` as argument.
-  In order to create a Java ``string`` (``java.lang.String``) we need to instantiate a ``conveter``.
+  In order to create a Java ``string`` (``java.lang.String``) we need to instantiate a ``Conveter``.
   
   ```cpp  
   // Instantiate converter
@@ -134,7 +134,7 @@ Unit test
 
 Unit testes are provided in ``UnitTest.cpp``.
 
-The source code exaustevely cover many methods with differente signatures. Maybe it is the best way to understand the seamless integration of ``CJay`` library.
+The source code exaustevely covers many methods with differente signatures. Maybe it is the best way to understand the seamless integration of ``CJay`` library.
 
 TODO
 ----
