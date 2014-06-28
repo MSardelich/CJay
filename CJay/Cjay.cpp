@@ -55,8 +55,8 @@ CJ::~CJ() {
 void CJ::setSignature(std::string key, std::string descriptor, bool isStatic) {
     SignatureBase* signature;
 	std::string rv;
-	std::cout << descriptor << std::endl;
-    std::size_t pos = descriptor.find(")");
+
+	std::size_t pos = descriptor.find(")");
     rv = descriptor[pos+1];
 
     signature = new SignatureBase(descriptor, isStatic, rv.c_str());
@@ -186,7 +186,7 @@ VM::SignatureBase* CJ::getSignatureObj(std::string key) {
 
 void CJ::callClassConstructor_(int mangledVar, ...) {
     // Get Method Id (Constructor)
-    VM::SignatureBase* sig = this->getSignatureObj( std::string(CONSTRUCTOR_METHOD_NAME) );
+    VM::SignatureBase* sig = this->getSignatureObj(CONSTRUCTOR_METHOD_NAME);
     jmethodID mid = sig->mid;
     jobject obj;
 
@@ -407,70 +407,70 @@ Converter::Converter(): ConverterBase() { this->init(); }
 Converter::~Converter() { }
 
 void Converter::initARRAYLIST() {
-    ARRAYLIST.setSignature( std::string("toString"), std::string("()Ljava/lang/String;"), false );
-    ARRAYLIST.setSignature( std::string("get"), std::string("(I)Ljava/lang/Object;"), false );
-    ARRAYLIST.setSignature( std::string("size"), std::string("()I"), false );
+    ARRAYLIST.setSignature( "toString", "()Ljava/lang/String;", false );
+    ARRAYLIST.setSignature( "get", "(I)Ljava/lang/Object;", false );
+    ARRAYLIST.setSignature( "size", "()I", false );
 
     ARRAYLIST.setClass("java/util/ArrayList");
 }
 void Converter::initMAP() { }
 
 void Converter::initNUMBER() {
-    NUMBER.setSignature( std::string("intValue"), std::string("()I"), false );
-    NUMBER.setSignature( std::string("longValue"), std::string("()J"), false );
-    NUMBER.setSignature( std::string("floatValue"), std::string("()F"), false );
-    NUMBER.setSignature( std::string("doubleValue"), std::string("()D"), false );
-    NUMBER.setSignature( std::string("shortValue"), std::string("()S"), false );
-    NUMBER.setSignature( std::string("byteValue"), std::string("()B"), false );
+    NUMBER.setSignature( "intValue", "()I", false );
+    NUMBER.setSignature( "longValue", "()J", false );
+    NUMBER.setSignature( "floatValue", "()F", false );
+    NUMBER.setSignature( "doubleValue", "()D", false );
+    NUMBER.setSignature( "shortValue", "()S", false );
+    NUMBER.setSignature( "byteValue", "()B", false );
 
     NUMBER.setClass("java/lang/Number");
 }
 
 void Converter::initBOOLEAN() {
-    BOOLEAN.setSignature( std::string("booleanValue"), std::string("()Z"), false );
-    BOOLEAN.setSignature( std::string("valueOf"), std::string("(Z)Ljava/lang/Boolean;"), true);
+    BOOLEAN.setSignature( "booleanValue", "()Z", false );
+    BOOLEAN.setSignature( "valueOf", "(Z)Ljava/lang/Boolean;", true);
 
     BOOLEAN.setClass("java/lang/Boolean");
 }
 
 void Converter::initBYTE() {
-    BYTE.setSignature( std::string("valueOf"), std::string("(B)Ljava/lang/Byte;"), true);
+    BYTE.setSignature( "valueOf", "(B)Ljava/lang/Byte;", true);
 
     BYTE.setClass("java/lang/Byte");
 }
 
 void Converter::initSHORT() {
-    SHORT.setSignature( std::string("valueOf"), std::string("(S)Ljava/lang/Short;"), true);
+    SHORT.setSignature( "valueOf", "(S)Ljava/lang/Short;", true);
 
     SHORT.setClass("java/lang/Short");
 }
 
 void Converter::initLONG() {
-    LONG.setSignature( std::string("valueOf"), std::string("(J)Ljava/lang/Long;"), true);
+    LONG.setSignature( "valueOf", "(J)Ljava/lang/Long;", true);
 
     LONG.setClass("java/lang/Long");
 }
 
 void Converter::initINTEGER() {
-    INTEGER.setSignature( std::string("valueOf"), std::string("(I)Ljava/lang/Integer;"), true);
+    INTEGER.setSignature( "valueOf", "(I)Ljava/lang/Integer;", true);
 
     INTEGER.setClass("java/lang/Integer");
 }
 
 void Converter::initFLOAT() {
-    FLOAT.setSignature( std::string("valueOf"), std::string("(F)Ljava/lang/Float;"), true);
+    FLOAT.setSignature( "valueOf", "(F)Ljava/lang/Float;", true);
 
     FLOAT.setClass("java/lang/Float");
 }
 
 void Converter::initDOUBLE() {
-    DOUBLE.setSignature( std::string("valueOf"), std::string("(D)Ljava/lang/Double;"), true);
+    DOUBLE.setSignature( "valueOf", "(D)Ljava/lang/Double;", true);
 
     DOUBLE.setClass("java/lang/Double");
 }
 
 void Converter::initCHARACTER() {
-    CHARACTER.setSignature( std::string("valueOf"), std::string("(C)Ljava/lang/Character;"), true);
+    CHARACTER.setSignature( "valueOf", "(C)Ljava/lang/Character;", true);
 
     CHARACTER.setClass("java/lang/Character");
 }
@@ -536,49 +536,6 @@ int Converter::sizeVector(jobject jobj) {
 
     return env->CallIntMethod(jobj, sig->mid, NULL);
 }
-
-/*
-inline jobject WRAPPER_METHODV(JNIEnv* env, VM::SignatureBase* sig, jclass jclazz, jobject jobj, ...) {
-    jobject jresult;
-
-    va_list args;
-    va_start(args, jobj);
-
-    jresult = sig->callMethod(env, jclazz, jobj, args);
-
-    va_end(args);
-
-    return jresult;
-}
-*/
-/*
-vec_jobj Converter::toVecObject(jobject jobj) {
-    VM::SignatureBase* sig = ARRAYLIST.getSignatureObj("get");
-    vec_jobj cppVec;
-    jobject elem;
-    int size = this->szVec(jobj);
-
-    for (int i = 0 ; i < size ; i++) {
-        elem = env->CallObjectMethod(jobj, sig->mid, (jint) i);
-        cppVec.push_back(elem);
-    }
-
-    return cppVec;
-}
-
-vec_jobj Converter::c_cast_vector_obj(jobject jobj, int size) {
-    VM::SignatureBase* sig = ARRAYLIST.getSignatureObj("get");
-    vec_jobj cppVec;
-    jobject elem;
-
-    for (int i = 0 ; i < size ; i++) {
-        elem = env->CallObjectMethod(jobj, sig->mid, (jint) i);
-        cppVec.push_back(elem);
-    }
-
-    return cppVec;
-}
-*/
 
 template <> jbyte Converter::c_cast(jobject jobj) {
     //return BYTE.call<jbyte>("byteValue", x);
@@ -653,54 +610,6 @@ template std::vector<jdouble> Converter::c_cast_vector(jobject);
 template std::vector<jbyte> Converter::c_cast_vector(jobject);
 template std::vector<std::string> Converter::c_cast_vector(jobject);
 
-/*
-template <> std::vector<int> Converter::c_cast_vector(jobject jobj, int size) {
-    jmethodID mid = ARRAYLIST.getSignatureObj("get")->mid;
-    jobject e;
-    std::vector<int> v;
-
-    for (int i = 0 ; i < size ; i++) {
-        e = env->CallObjectMethod(jobj, mid, (jint) i); // get element
-        v.push_back( this->c_cast<int>(e) ); // convert to primitive
-    }
-
-    return v;
-}
-
-template <> std::vector<int> Converter::c_cast_vector(jobject jobj) {
-    int size = this->sizeVector(jobj);
-    return this->c_cast_vector<int>(jobj, size);
-}
-
-template <> std::vector<double> Converter::c_cast_vector(jobject jobj, int size) {
-    jmethodID mid = ARRAYLIST.getSignatureObj("get")->mid;
-    jobject e;
-    std::vector<double> v;
-
-    for (int i = 0 ; i < size ; i++) {
-        e = env->CallObjectMethod(jobj, mid, (jint) i); // get element
-        v.push_back( this->c_cast<double>(e) ); // convert to primitive
-    }
-
-    return v;
-}
-
-template <> std::vector<double> Converter::c_cast_vector(jobject jobj) {
-    int size = this->sizeVector(jobj);
-    return this->c_cast_vector<double>(jobj, size);
-}
-*/
-/*
-template <typename To> std::vector<To> Converter::c_cast_vector(jobject jobj) {
-    int size = this->sizeVector(jobj);
-    return this->c_cast_vector<To>(jobj, size);
-}
-*/
-/*
-std::string Converter::toString(jobject jobj) {
-    return env->GetStringUTFChars((jstring) jobj, 0);
-}
-*/
 void Converter::deleteRef(jobject jobj) {
     env->DeleteLocalRef(jobj);
 }
