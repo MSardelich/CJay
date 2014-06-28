@@ -43,9 +43,51 @@ public class Example {
   static String parseString(String x) {
     return x;
   }
-  //Parse ArrayList
-  static ArrayList<Integer> parseArray(int x, int y) {
+  //Parse ArrayList<Byte>
+  static ArrayList<Byte> parseArrayListByte(byte x, byte y) {
+    ArrayList<Byte> result = new ArrayList<Byte>();
+    result.add(x);
+    result.add(y);
+    return result;
+  }
+  //Parse ArrayList<Short>
+  static ArrayList<Short> parseArrayListShort(short x, short y) {
+    ArrayList<Short> result = new ArrayList<Short>();
+    result.add(x);
+    result.add(y);
+    return result;
+  }
+  //Parse ArrayList<Long>
+  static ArrayList<Long> parseArrayListLong(long x, long y) {
+    ArrayList<Long> result = new ArrayList<Long>();
+    result.add(x);
+    result.add(y);
+    return result;
+  }
+  //Parse ArrayList<Integer>
+  static ArrayList<Integer> parseArrayListInteger(int x, int y) {
     ArrayList<Integer> result = new ArrayList<Integer>();
+    result.add(x);
+    result.add(y);
+    return result;
+  }
+  //Parse ArrayList<Float>
+  static ArrayList<Float> parseArrayListFloat(float x, float y) {
+    ArrayList<Float> result = new ArrayList<Float>();
+    result.add(x);
+    result.add(y);
+    return result;
+  }
+  //Parse ArrayList<Double>
+  static ArrayList<Double> parseArrayListDouble(double x, double y) {
+    ArrayList<Double> result = new ArrayList<Double>();
+    result.add(x);
+    result.add(y);
+    return result;
+  }
+  //Parse ArrayList<String>
+  static ArrayList<String> parseArrayListString(String x, String y) {
+    ArrayList<String> result = new ArrayList<String>();
     result.add(x);
     result.add(y);
     return result;

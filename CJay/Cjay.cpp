@@ -1,5 +1,5 @@
 /*
- * CJ.cpp
+ * CJay.cpp
  *
  *  Created on: May 30, 2014
  *      Author: msn
@@ -8,7 +8,7 @@
 #define DEFAULT_JNI_VERSION JNI_VERSION_1_8
 #define CONSTRUCTOR_METHOD_NAME "<init>"
 
-#include "Handler.h"
+#include "Cjay.hpp"
 
 namespace VM {
 
@@ -55,7 +55,7 @@ CJ::~CJ() {
 void CJ::setSignature(std::string key, std::string descriptor, bool isStatic) {
     SignatureBase* signature;
 	std::string rv;
-
+	std::cout << descriptor << std::endl;
     std::size_t pos = descriptor.find(")");
     rv = descriptor[pos+1];
 
@@ -426,55 +426,101 @@ void Converter::initNUMBER() {
     NUMBER.setClass("java/lang/Number");
 }
 
+void Converter::initBOOLEAN() {
+    BOOLEAN.setSignature( std::string("booleanValue"), std::string("()Z"), false );
+    BOOLEAN.setSignature( std::string("valueOf"), std::string("(Z)Ljava/lang/Boolean;"), true);
+
+    BOOLEAN.setClass("java/lang/Boolean");
+}
+
+void Converter::initBYTE() {
+    BYTE.setSignature( std::string("valueOf"), std::string("(B)Ljava/lang/Byte;"), true);
+
+    BYTE.setClass("java/lang/Byte");
+}
+
+void Converter::initSHORT() {
+    SHORT.setSignature( std::string("valueOf"), std::string("(S)Ljava/lang/Short;"), true);
+
+    SHORT.setClass("java/lang/Short");
+}
+
+void Converter::initLONG() {
+    LONG.setSignature( std::string("valueOf"), std::string("(J)Ljava/lang/Long;"), true);
+
+    LONG.setClass("java/lang/Long");
+}
+
+void Converter::initINTEGER() {
+    INTEGER.setSignature( std::string("valueOf"), std::string("(I)Ljava/lang/Integer;"), true);
+
+    INTEGER.setClass("java/lang/Integer");
+}
+
+void Converter::initFLOAT() {
+    FLOAT.setSignature( std::string("valueOf"), std::string("(F)Ljava/lang/Float;"), true);
+
+    FLOAT.setClass("java/lang/Float");
+}
+
+void Converter::initDOUBLE() {
+    DOUBLE.setSignature( std::string("valueOf"), std::string("(D)Ljava/lang/Double;"), true);
+
+    DOUBLE.setClass("java/lang/Double");
+}
+
+void Converter::initCHARACTER() {
+    CHARACTER.setSignature( std::string("valueOf"), std::string("(C)Ljava/lang/Character;"), true);
+
+    CHARACTER.setClass("java/lang/Character");
+}
+
 void Converter::init() {
     this->initARRAYLIST();
     this->initMAP();
+
     this->initNUMBER();
+
+    this->initBOOLEAN();
+    this->initBYTE();
+    this->initSHORT();
+    this->initLONG();
+    this->initINTEGER();
+    this->initFLOAT();
+    this->initDOUBLE();
+    this->initCHARACTER();
 }
 
-template <> jbyte Converter::j_cast(int x) {
-    // signed 8 bits | min: 128 max: 127
-    return (jbyte) x;
+template <> jobject Converter::j_cast(jboolean x) {
+    return BOOLEAN.call<jobject>("valueOf", x);
 }
 
-template <> jshort Converter::j_cast(short x) {
-    // signed 16 bits | min: -32,768 max: 32,767
-    return (jshort) x;
+template <> jobject Converter::j_cast(jbyte x) {
+    return BYTE.call<jobject>("valueOf", x);
 }
 
-template <> jint Converter::j_cast(int x) {
-    // signed 32 bits | min: -2^31 max: 2^31-1
-    return (jint) x;
+template <> jobject Converter::j_cast(jshort x) {
+    return SHORT.call<jobject>("valueOf", x);
 }
 
-template <> jlong Converter::j_cast(long x) {
-    // signed 32 bits | min: -2^31 max: 2^31-1
-    return (jlong) x;
+template <> jobject Converter::j_cast(jlong x) {
+    return LONG.call<jobject>("valueOf", x);
 }
 
-template <> jlong Converter::j_cast(long long x) {
-    // signed 32 bits | min: -2^31 max: 2^31-1
-    return (jlong) x;
+template <> jobject Converter::j_cast(jint x) {
+    return INTEGER.call<jobject>("valueOf", x);
 }
 
-template <> jfloat Converter::j_cast(float x) {
-    // single-precision 32-bit IEEE 754 floating point
-    return (jfloat) x;
+template <> jobject Converter::j_cast(jfloat x) {
+    return FLOAT.call<jobject>("valueOf", x);
 }
 
-template <> jdouble Converter::j_cast(double x) {
-    // single-precision 64-bit IEEE 754 floating point
-    return (jdouble) x;
+template <> jobject Converter::j_cast(jdouble x) {
+    return DOUBLE.call<jobject>("valueOf", x);
 }
 
-template <> jboolean Converter::j_cast(bool x) {
-    return (jboolean) x;
-}
-
-template <> jchar Converter::j_cast(char x) {
-    // single 16-bit Unicode character.
-    // minimum value of '\u0000' (or 0) and a maximum value of '\uffff' (or 65,535 inclusive)
-    return (jchar) x;
+template <> jobject Converter::j_cast(jchar x) {
+    return CHARACTER.call<jobject>("valueOf", x);
 }
 
 template <> jstring Converter::j_cast(std::string str) {
@@ -483,19 +529,6 @@ template <> jstring Converter::j_cast(std::string str) {
 
 template <> jstring Converter::j_cast(const char* str) {
     return env->NewStringUTF(str);
-}
-
-/*
-template <> vec_jobj Converter::c_cast(jobject jobj) {
-    vec_jobj v_jobj;
-    v_jobj = this->c_cast_vector_obj(jobj);
-
-    return v_jobj;
-}
-*/
-
-template <> std::string Converter::c_cast(jobject jobj) {
-    return std::string(env->GetStringUTFChars((jstring) jobj, JNI_FALSE));
 }
 
 int Converter::sizeVector(jobject jobj) {
@@ -547,29 +580,122 @@ vec_jobj Converter::c_cast_vector_obj(jobject jobj, int size) {
 }
 */
 
+template <> jbyte Converter::c_cast(jobject jobj) {
+    //return BYTE.call<jbyte>("byteValue", x);
+    jmethodID mid = NUMBER.getSignatureObj("byteValue")->mid;
+    return env->CallByteMethod(jobj, mid, NULL);
+}
+
+template <> jint Converter::c_cast(jobject jobj) {
+    jmethodID mid = NUMBER.getSignatureObj("intValue")->mid;
+    return env->CallIntMethod(jobj, mid, NULL);
+}
+
+template <> jlong Converter::c_cast(jobject jobj) {
+    jmethodID mid = NUMBER.getSignatureObj("longValue")->mid;
+    return env->CallLongMethod(jobj, mid, NULL);
+}
+
+template <> jshort Converter::c_cast(jobject jobj) {
+    jmethodID mid = NUMBER.getSignatureObj("shortValue")->mid;
+    return env->CallShortMethod(jobj, mid, NULL);
+}
+
+template <> jfloat Converter::c_cast(jobject jobj) {
+    jmethodID mid = NUMBER.getSignatureObj("floatValue")->mid;
+    return env->CallFloatMethod(jobj, mid, NULL);
+}
+
+template <> jdouble Converter::c_cast(jobject jobj) {
+    jmethodID mid = NUMBER.getSignatureObj("doubleValue")->mid;
+    return env->CallDoubleMethod(jobj, mid, NULL);
+}
+
+template <> jboolean Converter::c_cast(jobject jobj) {
+    jmethodID mid = BOOLEAN.getSignatureObj("bolleanValue")->mid;
+    return env->CallBooleanMethod(jobj, mid, NULL);
+}
+
+template <> std::string Converter::c_cast(jobject jobj) {
+    return std::string(env->GetStringUTFChars((jstring) jobj, JNI_FALSE));
+}
+
+template <typename To> std::vector<To> Converter::c_cast_vector(jobject jobj, int size) {
+    jmethodID mid = ARRAYLIST.getSignatureObj("get")->mid;
+    jobject e;
+    std::vector<To> v;
+
+    for (int i = 0 ; i < size ; i++) {
+        e = env->CallObjectMethod(jobj, mid, (jint) i); // get element
+        v.push_back( this->c_cast<To>(e) ); // convert to primitive
+    }
+
+    return v;
+}
+
+template <typename To> std::vector<To> Converter::c_cast_vector(jobject jobj) {
+    int size = this->sizeVector(jobj);
+    return this->c_cast_vector<To>(jobj, size);
+}
+
+template std::vector<jint> Converter::c_cast_vector(jobject, int);
+template std::vector<jshort> Converter::c_cast_vector(jobject, int);
+template std::vector<jlong> Converter::c_cast_vector(jobject, int);
+template std::vector<jfloat> Converter::c_cast_vector(jobject, int);
+template std::vector<jdouble> Converter::c_cast_vector(jobject, int);
+template std::vector<jbyte> Converter::c_cast_vector(jobject, int);
+template std::vector<std::string> Converter::c_cast_vector(jobject, int);
+
+template std::vector<jint> Converter::c_cast_vector(jobject);
+template std::vector<jshort> Converter::c_cast_vector(jobject);
+template std::vector<jfloat> Converter::c_cast_vector(jobject);
+template std::vector<jdouble> Converter::c_cast_vector(jobject);
+template std::vector<jbyte> Converter::c_cast_vector(jobject);
+template std::vector<std::string> Converter::c_cast_vector(jobject);
+
+/*
 template <> std::vector<int> Converter::c_cast_vector(jobject jobj, int size) {
-    jmethodID midARRAYLIST = ARRAYLIST.getSignatureObj("get")->mid;
-    jmethodID midNUMERIC = NUMBER.getSignatureObj("intValue")->mid;
+    jmethodID mid = ARRAYLIST.getSignatureObj("get")->mid;
     jobject e;
     std::vector<int> v;
 
     for (int i = 0 ; i < size ; i++) {
-        e = env->CallObjectMethod(jobj, midARRAYLIST, (jint) i); // get element
-        v.push_back( env->CallIntMethod(e, midNUMERIC, NULL) ); // convert to primitive
+        e = env->CallObjectMethod(jobj, mid, (jint) i); // get element
+        v.push_back( this->c_cast<int>(e) ); // convert to primitive
     }
 
     return v;
 }
 
 template <> std::vector<int> Converter::c_cast_vector(jobject jobj) {
-    std::vector<int> v;
-
     int size = this->sizeVector(jobj);
-    v = this->c_cast_vector<int>(jobj, size);
+    return this->c_cast_vector<int>(jobj, size);
+}
+
+template <> std::vector<double> Converter::c_cast_vector(jobject jobj, int size) {
+    jmethodID mid = ARRAYLIST.getSignatureObj("get")->mid;
+    jobject e;
+    std::vector<double> v;
+
+    for (int i = 0 ; i < size ; i++) {
+        e = env->CallObjectMethod(jobj, mid, (jint) i); // get element
+        v.push_back( this->c_cast<double>(e) ); // convert to primitive
+    }
 
     return v;
 }
 
+template <> std::vector<double> Converter::c_cast_vector(jobject jobj) {
+    int size = this->sizeVector(jobj);
+    return this->c_cast_vector<double>(jobj, size);
+}
+*/
+/*
+template <typename To> std::vector<To> Converter::c_cast_vector(jobject jobj) {
+    int size = this->sizeVector(jobj);
+    return this->c_cast_vector<To>(jobj, size);
+}
+*/
 /*
 std::string Converter::toString(jobject jobj) {
     return env->GetStringUTFChars((jstring) jobj, 0);

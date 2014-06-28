@@ -1,5 +1,5 @@
 /*
- * CJ.h
+ * CJay.h
  *
  *  Created on: May 30, 2014
  *      Author: msn
@@ -39,7 +39,7 @@ enum class RV {
 extern JNIEnv* env;
 extern JavaVM* jvm;
 
-typedef long clong;
+//typedef float (CJ::*pFloat) (jobject, ...);
 
 class SignatureBase {
 public:
@@ -77,7 +77,6 @@ public:
     void setClass(std::string);
     VM::SignatureBase* getSignatureObj(std::string);
     void callClassConstructor_(int, ...);
-    //jobject callMethod(std::string, ...);
     template <typename To> To call(std::string, ...);
     JNIEnv* getEnv();
     CJ();
@@ -88,10 +87,31 @@ class ConverterBase {
 protected:
     CJ ARRAYLIST;
     CJ MAP;
+
     CJ NUMBER;
+
+    CJ BOOLEAN;
+    CJ BYTE;
+    CJ SHORT;
+    CJ LONG;
+    CJ INTEGER;
+    CJ FLOAT;
+    CJ DOUBLE;
+    CJ CHARACTER;
+
     virtual void initARRAYLIST() = 0;
     virtual void initMAP() = 0;
+
     virtual void initNUMBER() = 0;
+
+    virtual void initBOOLEAN() = 0;
+    virtual void initBYTE() = 0;
+    virtual void initSHORT() = 0;
+    virtual void initLONG() = 0;
+    virtual void initINTEGER() = 0;
+    virtual void initFLOAT() = 0;
+    virtual void initDOUBLE() = 0;
+    virtual void initCHARACTER() = 0;
 public:
     ConverterBase();
     virtual ~ConverterBase();
@@ -103,12 +123,22 @@ class Converter : public ConverterBase {
 protected:
     void initARRAYLIST();
     void initMAP();
+
     void initNUMBER();
+
+    void initBOOLEAN();
+    void initBYTE();
+    void initSHORT();
+    void initLONG();
+    void initINTEGER();
+    void initFLOAT();
+    void initDOUBLE();
+    void initCHARACTER();
+
     void init();
 public:
     template <typename To, typename From> To j_cast(From);
     template <typename To> To c_cast(jobject);
-    template <typename To> std::vector<To> c_cast_number(jobject);
     template <typename To> std::vector<To> c_cast_vector(jobject);
     template <typename To> std::vector<To> c_cast_vector(jobject, int);
     int sizeVector(jobject);
