@@ -43,27 +43,27 @@ int main (int argc, char* argv[]) {
     }
 
     // Set member signatures
-    CJ.setSignature( std::string("<init>"), std::string("()V"), false );
-    CJ.setSignature( std::string("parseBoolean"), std::string("(Z)Z"), false );
-    CJ.setSignature( std::string("parseByte"), std::string("(B)B"), false );
-    CJ.setSignature( std::string("parseChar"), std::string("(C)C"), false );
-    CJ.setSignature( std::string("parseShort"), std::string("(S)S"), false );
-    CJ.setSignature( std::string("parseInt"), std::string("(I)I"), false );
-    CJ.setSignature( std::string("parseLong"), std::string("(J)J"), false );
-    CJ.setSignature( std::string("parseFloat"), std::string("(F)F"), false );
-    CJ.setSignature( std::string("parseDouble"), std::string("(D)D"), false );
-    CJ.setSignature( std::string("parseString"), std::string("(Ljava/lang/String;)Ljava/lang/String;"), true );
+    CJ.setSignature( "<init>", "()V", false );
+    CJ.setSignature( "parseBoolean", "(Z)Z", false );
+    CJ.setSignature( "parseByte", "(B)B", false );
+    CJ.setSignature( "parseChar", "(C)C", false );
+    CJ.setSignature( "parseShort", "(S)S", false );
+    CJ.setSignature( "parseInt", "(I)I", false );
+    CJ.setSignature( "parseLong", "(J)J", false );
+    CJ.setSignature( "parseFloat", "(F)F", false );
+    CJ.setSignature( "parseDouble", "(D)D", false );
+    CJ.setSignature( "parseString", "(Ljava/lang/String;)Ljava/lang/String;", true );
 
-    CJ.setSignature( std::string("parseArrayListByte"), std::string("(BB)Ljava/util/ArrayList;"), true );
-    CJ.setSignature( std::string("parseArrayListShort"), std::string("(SS)Ljava/util/ArrayList;"), true );
-    CJ.setSignature( std::string("parseArrayListLong"), std::string("(JJ)Ljava/util/ArrayList;"), true );
-    CJ.setSignature( std::string("parseArrayListInteger"), std::string("(II)Ljava/util/ArrayList;"), true );
-    CJ.setSignature( std::string("parseArrayListFloat"), std::string("(FF)Ljava/util/ArrayList;"), true );
-    CJ.setSignature( std::string("parseArrayListDouble"), std::string("(DD)Ljava/util/ArrayList;"), true );
-    CJ.setSignature( std::string("parseArrayListString"), std::string("(Ljava/lang/String;Ljava/lang/String;)Ljava/util/ArrayList;"), true );
+    CJ.setSignature( "parseArrayListByte", "(BB)Ljava/util/ArrayList;", true );
+    CJ.setSignature( "parseArrayListShort", "(SS)Ljava/util/ArrayList;", true );
+    CJ.setSignature( "parseArrayListLong", "(JJ)Ljava/util/ArrayList;", true );
+    CJ.setSignature( "parseArrayListInteger", "(II)Ljava/util/ArrayList;", true );
+    CJ.setSignature( "parseArrayListFloat", "(FF)Ljava/util/ArrayList;", true );
+    CJ.setSignature( "parseArrayListDouble", "(DD)Ljava/util/ArrayList;", true );
+    CJ.setSignature( "parseArrayListString", "(Ljava/lang/String;Ljava/lang/String;)Ljava/util/ArrayList;", true );
 
-    CJ.setSignature( std::string("parseSimpleMap"), std::string("(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map;"), true );
-    CJ.setSignature( std::string("parseMap"), std::string("([Ljava/lang/String;[I)Ljava/util/Map;"), false );
+    CJ.setSignature( "parseSimpleMap", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map;", true );
+    CJ.setSignature( "parseMap", "([Ljava/lang/String;[I)Ljava/util/Map;", false );
 
     // Print signatures
     CJ.printSignatures();
