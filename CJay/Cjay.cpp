@@ -16,27 +16,33 @@ JNIEnv* env = NULL;
 JavaVM* jvm = NULL;
 
 // SignatureBase Members
-SignatureBase::SignatureBase(std::string descriptor, bool isStatic, const char* rv) :
-    descriptor(descriptor), isStatic(isStatic), mid(NULL) {
-    switch (*rv)
-    {
-    case 'Z' : this->rv = RV::Z; break;
-    case 'B' : this->rv = RV::B; break;
-    case 'C' : this->rv = RV::C; break;
-    case 'S' : this->rv = RV::S; break;
-    case 'I' : this->rv = RV::I; break;
-    case 'J' : this->rv = RV::J; break;
-    case 'F' : this->rv = RV::F; break;
-    case 'D' : this->rv = RV::D; break;
-    case 'L' : this->rv = RV::L; break;
-    case 'V' : this->rv = RV::VV; break;
-    default :
-        throw HandlerExc("Malformed method descriptor. Please review syntax.");
+SignatureBase::SignatureBase(std::string descriptor, bool isStatic) :
+    descriptor(descriptor), isStatic(isStatic), mid(NULL) { }
+
+SignatureBase::SignatureBase() : descriptor(""), isStatic(true), mid(NULL) { }
+SignatureBase::~SignatureBase() { }
+
+// Signature Members
+template <class To> Signature<To>::Signature(std::string descriptor, bool isStatic, RV rv):
+        SignatureBase(descriptor, isStatic) {
+
+    this->rv = rv;
+
+    // Assign pCall based on method type.
+    // It can be static or non-static.
+    if (isStatic) {
+        this->pCall = &CJ::callStatic<To>;
+    } else {
+        this->pCall = &CJ::callNonStatic<To>;
     }
 }
 
-SignatureBase::SignatureBase() : descriptor(""), isStatic(true), rv(RV::L), mid(NULL) { }
-SignatureBase::~SignatureBase() { }
+template <class To> Signature<To>::Signature() : SignatureBase() {
+    this->rv = RV::L;
+    this->pCall = NULL;
+}
+
+template <class To> Signature<To>::~Signature() { }
 
 // CJ Members
 
@@ -56,11 +62,28 @@ void CJ::setSignature(std::string key, std::string descriptor, bool isStatic) {
     SignatureBase* signature;
 	std::string rv;
 
+	// Extract the return value of method
+	// based on its descriptor
 	std::size_t pos = descriptor.find(")");
     rv = descriptor[pos+1];
 
-    signature = new SignatureBase(descriptor, isStatic, rv.c_str());
-	this->m.insert(signature_t::value_type(key, signature));
+    // Assign the type of return variable.
+    switch (*rv.c_str())
+    {
+    case 'Z' : signature = new Signature<jboolean>(descriptor, isStatic, RV::Z); break;
+    case 'B' : signature = new Signature<jbyte>(descriptor, isStatic, RV::B); break;
+    case 'C' : signature = new Signature<jchar>(descriptor, isStatic, RV::C); break;
+    case 'S' : signature = new Signature<jshort>(descriptor, isStatic, RV::S); break;
+    case 'I' : signature = new Signature<jint>(descriptor, isStatic, RV::I); break;
+    case 'J' : signature = new Signature<jlong>(descriptor, isStatic, RV::J); break;
+    case 'F' : signature = new Signature<jfloat>(descriptor, isStatic, RV::F); break;
+    case 'D' : signature = new Signature<jdouble>(descriptor, isStatic, RV::D); break;
+    case 'L' : signature = new Signature<jobject>(descriptor, isStatic, RV::L); break;
+    case 'V' : signature = new Signature<void>(descriptor, isStatic, RV::VV); break;
+    default :
+        throw HandlerExc("Malformed method descriptor. Please review syntax.");
+    }
+    this->m.insert(signature_t::value_type(key, signature));
 }
 
 void CJ::printSignatures() {
@@ -204,6 +227,172 @@ void CJ::callClassConstructor_(int mangledVar, ...) {
     this->obj = obj;
 }
 
+template <typename To> To CJ::call(std::string methodName, ...) {
+    SignatureBase* sigSuper = this->getSignatureObj(methodName);
+    Signature<To>* sigChild = dynamic_cast<Signature<To>*>(sigSuper);
+    jmethodID mid = sigChild->mid;
+    To (CJ::*pCall) (jmethodID, va_list);
+    pCall = sigChild->pCall;
+    To jobj;
+
+    va_list args;
+    va_start(args, methodName);
+
+    jobj = (this->*pCall) (mid, args);
+
+    va_end(args);
+
+    return jobj;
+}
+
+template <> void CJ::call(std::string methodName, ...) {
+    SignatureBase* sigSuper = this->getSignatureObj(methodName);
+    Signature<void>* sigChild = dynamic_cast<Signature<void>*>(sigSuper);
+    jmethodID mid = sigChild->mid;
+    void (CJ::*pCall) (jmethodID, va_list);
+    pCall = sigChild->pCall;
+
+    va_list args;
+    va_start(args, methodName);
+
+    (this->*pCall) (mid, args);
+
+    va_end(args);
+}
+
+template jboolean CJ::call(std::string methodName, ...);
+template jbyte CJ::call(std::string methodName, ...);
+template jchar CJ::call(std::string methodName, ...);
+template jshort CJ::call(std::string methodName, ...);
+template jint CJ::call(std::string methodName, ...);
+template jlong CJ::call(std::string methodName, ...);
+template jfloat CJ::call(std::string methodName, ...);
+template jdouble CJ::call(std::string methodName, ...);
+template jobject CJ::call(std::string methodName, ...);
+template void CJ::call(std::string methodName, ...);
+
+template <> jboolean CJ::callStatic(jmethodID mid, va_list args) {
+    return env->CallStaticBooleanMethodV(this->clazz, mid, args);
+}
+
+template <> jbyte CJ::callStatic(jmethodID mid, va_list args) {
+    return env->CallStaticByteMethodV(this->clazz, mid, args);
+}
+
+template <> jchar CJ::callStatic(jmethodID mid, va_list args) {
+    return env->CallStaticCharMethodV(this->clazz, mid, args);
+}
+
+template <> jshort CJ::callStatic(jmethodID mid, va_list args) {
+    return env->CallStaticShortMethodV(this->clazz, mid, args);
+}
+
+template <> jint CJ::callStatic(jmethodID mid, va_list args) {
+    return env->CallStaticIntMethodV(this->clazz, mid, args);
+}
+
+template <> jlong CJ::callStatic(jmethodID mid, va_list args) {
+    return env->CallStaticLongMethodV(this->clazz, mid, args);
+}
+
+template <> jfloat CJ::callStatic(jmethodID mid, va_list args) {
+    return env->CallStaticFloatMethodV(this->clazz, mid, args);
+}
+
+template <> jdouble CJ::callStatic(jmethodID mid, va_list args) {
+    return env->CallStaticDoubleMethodV(this->clazz, mid, args);
+}
+
+template <> jobject CJ::callStatic(jmethodID mid, va_list args) {
+    return env->CallStaticObjectMethodV(this->clazz, mid, args);
+}
+
+template <> void CJ::callStatic(jmethodID mid, va_list args) {
+    env->CallStaticVoidMethodV(this->clazz, mid, args);
+}
+
+template jboolean CJ::callStatic(jmethodID, va_list);
+template jbyte CJ::callStatic(jmethodID, va_list);
+template jchar CJ::callStatic(jmethodID, va_list);
+template jshort CJ::callStatic(jmethodID, va_list);
+template jint CJ::callStatic(jmethodID, va_list);
+template jlong CJ::callStatic(jmethodID, va_list);
+template jfloat CJ::callStatic(jmethodID, va_list);
+template jdouble CJ::callStatic(jmethodID, va_list);
+template jobject CJ::callStatic(jmethodID, va_list);
+template void CJ::callStatic(jmethodID, va_list);
+
+template <> jboolean CJ::callNonStatic(jmethodID mid, va_list args) {
+    return env->CallBooleanMethodV(this->obj, mid, args);
+}
+
+template <> jbyte CJ::callNonStatic(jmethodID mid, va_list args) {
+    return env->CallByteMethodV(this->obj, mid, args);
+}
+
+template <> jchar CJ::callNonStatic(jmethodID mid, va_list args) {
+    return env->CallCharMethodV(this->obj, mid, args);
+}
+
+template <> jshort CJ::callNonStatic(jmethodID mid, va_list args) {
+    return env->CallShortMethodV(this->obj, mid, args);
+}
+
+template <> jint CJ::callNonStatic(jmethodID mid, va_list args) {
+    return env->CallIntMethodV(this->obj, mid, args);
+}
+
+template <> jlong CJ::callNonStatic(jmethodID mid, va_list args) {
+    return env->CallLongMethodV(this->obj, mid, args);
+}
+
+template <> jfloat CJ::callNonStatic(jmethodID mid, va_list args) {
+    return env->CallFloatMethodV(this->obj, mid, args);
+}
+
+template <> jdouble CJ::callNonStatic(jmethodID mid, va_list args) {
+    return env->CallDoubleMethodV(this->obj, mid, args);
+}
+
+template <> jobject CJ::callNonStatic(jmethodID mid, va_list args) {
+    return env->CallObjectMethodV(this->obj, mid, args);
+}
+
+template <> void CJ::callNonStatic(jmethodID mid, va_list args) {
+    env->CallVoidMethodV(this->obj, mid, args);
+}
+
+template jboolean CJ::callNonStatic(jmethodID, va_list);
+template jbyte CJ::callNonStatic(jmethodID, va_list);
+template jchar CJ::callNonStatic(jmethodID, va_list);
+template jshort CJ::callNonStatic(jmethodID, va_list);
+template jint CJ::callNonStatic(jmethodID, va_list);
+template jlong CJ::callNonStatic(jmethodID, va_list);
+template jfloat CJ::callNonStatic(jmethodID, va_list);
+template jdouble CJ::callNonStatic(jmethodID, va_list);
+template jobject CJ::callNonStatic(jmethodID, va_list);
+template void CJ::callNonStatic(jmethodID, va_list);
+
+/*
+jdouble CJ::callTest2(va_list) {
+    return 2.0;
+}
+
+jfloat CJ::callTest(std::string methodName, ...) {
+    jdouble (CJ::*pCall)(std::string);
+    pCall = &CJ::callTest2;
+    jdouble jobj;
+
+    va_list args;
+    va_start(args, methodName);
+
+    jobj = (this->*pCall)(methodName);
+
+    return 3.0;
+}
+*/
+
+/*
 template <> jboolean CJ::call(std::string methodName, ...) {
     VM::SignatureBase* sig = this->getSignatureObj(methodName);
     jboolean jobj;
@@ -391,18 +580,21 @@ template <> void CJ::call(std::string methodName, ...) {
 
     va_end(args);
 }
+*/
 
 JNIEnv* CJ::getEnv() {
     return env;
 }
+
 
 // ConverterBase Members (super class)
 ConverterBase::ConverterBase() { }
 
 ConverterBase::~ConverterBase() { }
 
-/* Converter Members (child class)
-*/
+/**
+ ** Converter Members (child class)
+ **/
 Converter::Converter(): ConverterBase() { this->init(); }
 Converter::~Converter() { }
 

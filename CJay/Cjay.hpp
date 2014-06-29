@@ -39,15 +39,12 @@ enum class RV {
 extern JNIEnv* env;
 extern JavaVM* jvm;
 
-//typedef float (CJ::*pFloat) (jobject, ...);
-
 class SignatureBase {
 public:
-	std::string descriptor;
+    std::string descriptor;
     bool isStatic;
-    RV rv;
     jmethodID mid;
-    SignatureBase(std::string, bool, const char*);
+    SignatureBase(std::string, bool);
     SignatureBase();
     virtual ~SignatureBase();
 };
@@ -78,9 +75,20 @@ public:
     VM::SignatureBase* getSignatureObj(std::string);
     void callClassConstructor_(int, ...);
     template <typename To> To call(std::string, ...);
+    template <typename To> To callStatic(jmethodID, va_list);
+    template <typename To> To callNonStatic(jmethodID, va_list);
     JNIEnv* getEnv();
     CJ();
     virtual ~CJ();
+};
+
+template <class To> class Signature : public SignatureBase {
+public:
+    RV rv;
+    To (CJ::*pCall) (jmethodID, va_list);
+    Signature(std::string, bool, RV);
+    Signature();
+    virtual ~Signature();
 };
 
 class ConverterBase {
