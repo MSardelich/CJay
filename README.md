@@ -1,35 +1,110 @@
 CJay -- Java Native Interface made easy
 =======================================
 
-Seamlessly calls Java classes (here the "*jay*") from C++. The ``Cjay`` library abstracts the use of Java Native Interface (``JNI``).
+Seamlessly call Java classes (here the "*jay*") from C++. The ``Cjay`` C++ library abstracts the use of Java Native Interface (``JNI``).
 
 Why?
 ----
 
-* Although ``JNI`` is a mature library its method caller entry points depend on the method description/signature i.e ``CallStaticVoidMethod``, ``CallVoidMethod``, ``CallObjectMethod``, ...
-  On the other hand, ``CJay`` has a call method (``CJ::call<T>``) with only one entry point.
-* ``CJay`` has a conversion class ``Convert`` that easy cast types from C++ to Java and *vice versa*.
-* The conversion class can for exmaple can convert from Java ``Arraylist<T>`` to C++ ``Vector<T>`` directly, see for example ``CJ::c_cast_vector<T>`` and ``CJ::c_cast<T>`` for primitive types.
-* Register your Java methods only once, use them around the code.
-* You can still call native ``JNI`` functions. Just get the JVM enviroment pointer: ``CJ::env``.
-* Only one header file: ``Cjay.hpp``
-* An exception handler with clear and informative error messages.
+* Although ``JNI`` is a mature library, its method caller entry points depend on the method description/signature i.e ``CallStaticVoidMethod``, ``CallVoidMethod``, ``CallObjectMethod``, and many others.
+  On the other hand, ``CJay`` has **only one call method** (``CJ::call<T>``) for all types of description/signature.
+* ``CJay`` comes with a **conversion class** (``Convert``) that straightforwardly **cast types** from C++ to Java and **vice versa**. The conversion class can, for exmaple, convert from Java ``Arraylist<T>`` to C++ ``Vector<T>`` in one line of code! See ``CJ::c_cast_vector<T>`` and ``CJ::c_cast<T>`` for general primitive types.
+* Transparent interface **method caching**. Register your Java methods only once, use them around the code.
+* ``Cjay`` emulates **reflection** using standard C++ Maps (you can instantiate Java classes and invoke methods by string name).   
+* You can still **use** ``JNI`` functions (``JNI.h``). Just get the JVM enviroment pointer: ``VM::env``.
+* Only **one header file**: ``Cjay.hpp``
+* **Exception handler** with clear and informative error messages.
 
-Compiler, Linker and System Variables
--------------------------------------
+Life Made Easy!
+---------------
 
-First of all, you need to install [Oracle Java Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>).
+For illustration purposes, suppose you have the following ``Example.java`` class which you want to call from your C++ code:
 
-Make sure compiler toolchain includes (-I option) the JDK ``include`` sub-folder . On window you MUST include ``include\win32`` sub-folder too.
+```java
+package example;
+import java.util.*;
 
-You must link (-L option) ``jvm`` file in [Java Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>) ``lib`` folder, and set the system ``path`` to this folder.
+public class Example {
+  
+  // Construtor
+  public Example() { }
+  
+  // ArrayList<Integer> method
+  static ArrayList<Integer> parseArrayListInteger(int x, int y) {
+    ArrayList<Integer> result = new ArrayList<Integer>();
+    result.add(x);
+    result.add(y);
+    return result;
+  }
+  
+  // Main method
+  public static void main(String[] args) { }
+  
+}
+```
 
-``Cjay`` is **c++11** compatible, so add ``-std=c++11`` flag.
+The code below shows a typical C++ ``Cjay`` library implementation:
 
-In case you want to run the unit tests (``UnitTest.cpp``) make sure system enviroment `CLASSPATH` variable includes path to ``java/bin`` folder. Any java class that you want to instantiate MUST follow the same procedure
+```cpp
+#include <string>
+#include <vector>
 
-Implementation (Starting Out)
------------------------------
+#include "Cjay.hpp"
+
+using namespace VM;
+
+// Define your JDK version
+jint CJ::JNI_VERSION = JNI_VERSION_1_8; 
+
+int main (int argc, char* argv[]) {
+    // Instantiate CJay
+    CJ CJ;
+    
+    // Get Java CLASSPATH environment variable
+    std::string paramPath = std::string("-Djava.class.path=") + std::string(getenv("CLASSPATH"));
+    
+    // Set vector with all JVM options
+    std::vector<std::string> vmOption(paramPath);
+    
+    // Create JVM
+    CJ.createVM(vmOption);
+    
+    // Register Java methods
+    // Important: Run the command "$ javap -s -p emxample.class" to get all the information you need.
+    //            The setSignature method has the arguments: <method_name>, <method_description>, <method_is_static>.
+    CJ.setSignature( "parseArrayListInteger", "(II)Ljava/util/ArrayList;", true ); // method is static
+    CJ.setSignature( "<init>", "()V", false ); // class constructor always use <init> signature
+    
+    // Instantiate a converter
+    // It allows to cast from Java Virtual Machine to C++ and vice versa
+    Converter cnv;
+    
+    // Set Java class
+    CJ.setClass("example/Example");
+    
+    // Call Java class constructor
+    CJ.callClassConstructor(NULL); // the constructor does not require any argumentm, so NULL.
+    
+    // Main Routine:
+    // 1) Cast from C++ to Java types
+    // 2) Call Java method
+    // 3) Cast back from Java to C++
+    // Important: The "call" member function is templated based on
+    //            the return value of Java method 
+    //
+    // -- Java Method (ArrayList<Integer>)
+    jint arg_i_1 = (jint) 123; // cast FROM C++ "int" TO Java "int"
+    jint arg_i_2 = (jint) 456; // cast FROM C++ "int" TO Java "int"
+    L = CJ.call<jobject>( "parseArrayListInteger", arg_i_1, arg_i_2 ); // call (template dependes on returned value)
+    std::vector<jint> v = cnv.c_cast_vector<jint>(L, 2); // cast FROM Java "ArrayList<Integer>" TO "vector<long>"
+                                                         // the caster works like magic. ONE LINE OF CODE!
+    // Destroy JVM
+    CJ.destroyVM();
+}    
+```
+
+General Implementation Steps
+----------------------------
 
 A standard implementation should follow the steps below.
 
@@ -56,8 +131,7 @@ A standard implementation should follow the steps below.
       CJ CJ;
       
       // Set path to java classes
-      std::string jarsPath(getenv("CLASSPATH")); // Get CLASSPATH environment variable
-      std::string paramPath = std::string("-Djava.class.path=") + jarsPath;
+      std::string paramPath = std::string("-Djava.class.path=") + std::string(getenv("CLASSPATH"));
       
       std::vector<std::string> vmOption;
       vmOption.push_back(paramPath); // add path to class
@@ -88,8 +162,8 @@ A standard implementation should follow the steps below.
   * isStatic  (**boll**). *True if the method is static.*
 
   ```cpp
-  CJ.setSignature( "<init>", "<constructor_descriptor>", false ); // the method name of constructor is always <init>. 
-  CJ.setSignature( "<merthod_name>", "<merthod_descriptor>", false ); // add each method you want to call.
+  CJ.setSignature("<init>","<constructor_descriptor>",false); // the method name of constructor is always <init>. 
+  CJ.setSignature("<merthod_name>","<merthod_descriptor>",false); // add each method you want to call.
   ```
 
 - Load/Set the java class:
@@ -118,7 +192,7 @@ A standard implementation should follow the steps below.
   **IMPORATNT:** See we have only one ``call<T>`` entry point, regardless the method descriptor. It is a variadic member. The member function ``call<T>`` is temaplted based on the method return value.
   
   ```cpp
-  jobject L = CJ.call<jobject>( "parseString", cnv.j_cast<jstring>("foo") ); // Call java method. Cast FROM C++ string TO java.lang.String (j_cast)
+  jobject L = CJ.call<jobject>( "parseString", cnv.j_cast<jstring>("foo") ); // call
   std::string str = cnv.c_cast<std::string>(L); // Now, cast back: FROM java.lang.String TO C++ string (c_cast)
   assert ( str == std::string("foo") );
   ```
@@ -129,18 +203,37 @@ A standard implementation should follow the steps below.
   CJ.destroyVM();
   ```
 
-Unit test
----------
+Compiler, Linker and System Variables
+-------------------------------------
 
-Unit testes are provided in ``UnitTest.cpp``.
+First of all, you need to install [Oracle Java Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>).
 
-The source code exaustevely covers many methods with differente signatures. Maybe it is the best way to understand the seamless integration of ``CJay`` library.
+Make sure compiler toolchain includes (-I option) your [Java Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>) ``include`` sub-folder . On window you MUST include ``include\win32`` sub-folder too.
+
+You must link (-L option) ``jvm`` file in [Java Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>) ``lib`` folder, and set the system ``path`` to this folder.
+
+``Cjay`` is **c++11** compatible, so add ``-std=c++11`` flag.
+
+Don't forget to add the path to the Java class library that you want to integrate to `CLASSPATH` system enviroment variable.
+
+``CJay`` C++ library was extensevely tested using ``g++ (GCC) 4.8.1``.
+
+Unit tests
+----------
+
+In case you want to run unit tests make sure your `CLASSPATH` system enviroment variable includes path to your local copy of ``java/bin`` repository folder.
+
+The `java/bin` folder has sub-folder `example` with the class library `Example.class`. Its source code can be found in `java/src` folder.
+
+The source code exaustevely covers many methods with different signatures. Maybe it is the best way to learn the seamless integration of ``CJay`` C++ library.
+
+Compile and run ``UnitTest.cpp``.
 
 TODO
 ----
 
 * Improve ``Converter`` class, including, for example, a caster from ``java.util.Map<T>`` to C++ ``Map<T>``
-* Add methods to main ``CJ`` class in order to acess java class fields.
+* Add methods to main ``CJ`` class in order to acess Java class *fields*.
 
 Questions?
 ----------
