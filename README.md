@@ -1,5 +1,5 @@
 CJay -- Java&trade; Native Interface made easy
-=======================================
+----------------------------------------------
 
 Seamlessly call Java&trade; classes (here the "*jay*") from C++. The ``Cjay`` C++ library abstracts the use of Java Native Interface (``JNI``).
 
