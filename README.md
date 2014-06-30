@@ -1,17 +1,17 @@
-CJay -- Java Native Interface made easy
+CJay -- Java&trade; Native Interface made easy
 =======================================
 
-Seamlessly call Java classes (here the "*jay*") from C++. The ``Cjay`` C++ library abstracts the use of Java Native Interface (``JNI``).
+Seamlessly call Java&trade; classes (here the "*jay*") from C++. The ``Cjay`` C++ library abstracts the use of Java Native Interface (``JNI``).
 
 Why?
 ----
 
 * Although ``JNI`` is a mature library, its method caller entry points depend on the method description/signature i.e ``CallStaticVoidMethod``, ``CallVoidMethod``, ``CallObjectMethod``, and many others.
   On the other hand, ``CJay`` has **only one call method** (``CJ::call<T>``) for all types of description/signature.
-* ``CJay`` comes with a **conversion class** (``Convert``) that straightforwardly **cast types** from C++ to Java and **vice versa**. The conversion class can, for exmaple, convert from Java ``Arraylist<T>`` to C++ ``Vector<T>`` in one line of code! See ``CJ::c_cast_vector<T>`` and ``CJ::c_cast<T>`` for general primitive types.
-* Transparent interface **method caching**. Register your Java methods only once, use them around the code.
-* ``Cjay`` emulates **reflection** using standard C++ Maps (you can instantiate Java classes and invoke methods by string name).   
-* You can still **use** ``JNI`` functions (``JNI.h``). Just get the JVM enviroment pointer: ``VM::env``.
+* ``CJay`` comes with a **conversion class** (``Convert``) that straightforwardly **cast types** from C++ to Java&trade; and **vice versa**. The conversion class can, for exmaple, convert from Java&trade; ``Arraylist<T>`` to C++ ``Vector<T>`` in one line of code! See ``CJ::c_cast_vector<T>`` and ``CJ::c_cast<T>`` for general primitive types.
+* Transparent interface **method caching**. Register your Java&trade; methods only once, use them around the code.
+* ``Cjay`` emulates **reflection** using standard C++ Maps (you can instantiate Java&trade; classes and invoke methods by string name).   
+* You can still **use** ``JNI`` functions (``JNI.h``). Just get the Java&trade; Virtual Machine enviroment pointer: ``VM::env``.
 * Only **one header file**: ``Cjay.hpp``
 * **Exception handler** with clear and informative error messages.
 
@@ -124,27 +124,27 @@ A standard implementation should follow the steps below.
 * Include library **header file**: ``Cjay.hpp``.
 * **Assign ``JNI_VERSION``** variable (it must be compatible with the versions described in your ``<jni.h>``).
 * Define **JVM path**, additional flags and **create JVM**.
-* Obtain the **signatures/descriptions** of your java class:
+* Obtain the **signatures/descriptions** of your Java&trade; class:
 
   ```bash
   $ javap -s -p <your_java_class>.class
   ```
 
 * **Set the signatures** you just obtained calling ``setSignature``.
-* **Load/Set** the java **class**.
-* **Call** Java class **constructor** (if you have to call non-static methods).
-* **Call** Java **method**
+* **Load/Set** the Java&trade; **class**.
+* **Call** Java&trade; class **constructor** (if you have to call non-static methods).
+* **Call** Java&trade; **method**
   
   *Here another example.*
   
-  Consider we have a java method ``parseString`` that recieves type ``java.lang.String`` and returns ``java.lang.String``.
+  Consider we have a Java&trade; method ``parseString`` that recieves type ``java.lang.String`` and returns ``java.lang.String``.
   
   **IMPORATNT:** *See we only have one ``call<T>`` entry point, regardless the method descriptor. It is a variadic member. The member function ``call<T>`` is temaplated based on the method return type.*
   
   ```cpp
-  // cast FROM C++ "string" TO Java "java.leng.String"
+  // cast FROM C++ "string" TO Java&trade; "java.leng.String"
   jstring arg = cnv.j_cast<jstring>("foo");
-  // call Java method
+  // call Java&trade; method
   jobject L = CJ.call<jobject>( "parseString", cnv.j_cast<jstring>("foo") ); 
   // cast FROM "java.lang.String" TO C++ "string"
   std::string str = cnv.c_cast<std::string>(L);
@@ -155,15 +155,15 @@ A standard implementation should follow the steps below.
 Compiler, Linker and System Variables
 -------------------------------------
 
-First of all, you need to install [Oracle Java Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>).
+First of all, you need to install [Oracle Java&trade; Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>).
 
-Make sure compiler toolchain includes (-I option) your [Java Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>) ``include`` sub-folder . On window you MUST include ``include\win32`` sub-folder too.
+Make sure compiler toolchain includes (-I option) your [Java&trade; Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>) ``include`` sub-folder . On window you MUST include ``include\win32`` sub-folder too.
 
-You must link (-L option) ``jvm`` file in [Java Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>) ``lib`` folder, and set the system ``path`` to this folder.
+You must link (-L option) ``jvm`` file in [Java&trade; Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>) ``lib`` folder, and set the system ``path`` to this folder.
 
 ``Cjay`` is **c++11** compatible, so add ``-std=c++11`` flag.
 
-Don't forget to add the path to the Java class library that you want to integrate to `CLASSPATH` system enviroment variable.
+Don't forget to add the path to the Java&trade; class library that you want to integrate to `CLASSPATH` system enviroment variable.
 
 ``CJay`` C++ library was extensevely tested using ``g++ (GCC) 4.8.1``.
 
@@ -182,7 +182,7 @@ TODO
 ----
 
 * Improve ``Converter`` class, including, for example, a caster from ``java.util.Map<T>`` to C++ ``Map<T>``
-* Add methods to main ``CJ`` class in order to acess Java class *fields*.
+* Add methods to main ``CJ`` class in order to acess Java&trade; class *fields*.
 * Write documentation.
 
 Questions?
