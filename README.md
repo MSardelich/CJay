@@ -183,6 +183,7 @@ TODO
 
 * Improve ``Converter`` class, including, for example, a caster from ``java.util.Map<T>`` to C++ ``Map<T>``
 * Add methods to main ``CJ`` class in order to acess Java class *fields*.
+* Write documentation.
 
 Questions?
 ----------
