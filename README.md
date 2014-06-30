@@ -70,9 +70,12 @@ int main (int argc, char* argv[]) {
     CJ.createVM(vmOption);
     
     // Register Java methods
-    // Important: Run the command "$ javap -s -p emxample.class" to get all the information you need.
-    //            The setSignature method has the arguments: <method_name>, <method_description>, <method_is_static>.
-    CJ.setSignature( "parseArrayListInteger", "(II)Ljava/util/ArrayList;", true ); // method is static
+    //
+    // Important:
+    // Run the command "$ javap -s -p emxample.class" to get all the information you need.
+    // "setSignature" method has the arguments: <method_name>, <method_description>, <method_is_static>.
+    //
+    CJ.setSignature( "parseArrayListInteger", "(II)Ljava/util/ArrayList;", true );
     CJ.setSignature( "<init>", "()V", false ); // class constructor always use <init> signature
     
     // Instantiate a converter
@@ -83,21 +86,30 @@ int main (int argc, char* argv[]) {
     CJ.setClass("example/Example");
     
     // Call Java class constructor
-    CJ.callClassConstructor(NULL); // the constructor does not require any argumentm, so NULL.
+    CJ.callClassConstructor(NULL); // this constructor does not require any argument, so NULL.
     
     // Main Routine:
     // 1) Cast from C++ to Java types
     // 2) Call Java method
     // 3) Cast back from Java to C++
-    // Important: The "call" member function is templated based on
-    //            the return value of Java method 
+    // Important:
+    // The "call" member function is templated based on
+    // the return value of Java method 
     //
     // -- Java Method (ArrayList<Integer>)
-    jint arg_i_1 = (jint) 123; // cast FROM C++ "int" TO Java "int"
-    jint arg_i_2 = (jint) 456; // cast FROM C++ "int" TO Java "int"
-    L = CJ.call<jobject>( "parseArrayListInteger", arg_i_1, arg_i_2 ); // call (template dependes on returned value)
-    std::vector<jint> v = cnv.c_cast_vector<jint>(L, 2); // cast FROM Java "ArrayList<Integer>" TO "vector<long>"
-                                                         // the caster works like magic. ONE LINE OF CODE!
+    //
+    
+    // cast FROM C++ "int" TO Java "int"
+    jint arg_i_1 = (jint) 123;
+    jint arg_i_2 = (jint) 456;
+    
+    // call Java method (template dependes on returned value)
+    L = CJ.call<jobject>( "parseArrayListInteger", arg_i_1, arg_i_2 ); 
+    
+    // cast FROM Java "ArrayList<Integer>" TO "vector<long>"
+    // the caster works like magic. ONE LINE OF CODE!
+    std::vector<jint> v = cnv.c_cast_vector<jint>(L, 2); 
+    
     // Destroy JVM
     CJ.destroyVM();
 }    
@@ -108,100 +120,36 @@ General Implementation Steps
 
 A standard implementation should follow the steps below.
 
-* Include library header file (only one):
-  
-  ```cpp
-  #include "Cjay.hpp"
-  ```
+* Include library **header file**: ``Cjay.hpp``.
+* **Assign ``JNI_VERSION``** variable (it must be compatible with the versions described in your ``<jni.h>``).
+* Define **JVM path**, additional flags and **create JVM**.
+* Obtain the **signatures/descriptions** of your java class:
 
-* Assign ``JNI_VERSION`` variable (it must be compatible with the versions described in your ``<jni.h>``). For example (version 1.8):
-
-  ```cpp
-  jint VM::CJ::JNI_VERSION = JNI_VERSION_1_8;
-  ```
-
-* Assign JVM path, additional flags and create JVM:
-
-  ```cpp
-  using namespace VM;
-  
-  jint CJ::JNI_VERSION = JNI_VERSION_1_8; // Depends on installed JDK!
-  
-  int main (int argc, char* argv[]) {
-      CJ CJ;
-      
-      // Set path to java classes
-      std::string paramPath = std::string("-Djava.class.path=") + std::string(getenv("CLASSPATH"));
-      
-      std::vector<std::string> vmOption;
-      vmOption.push_back(paramPath); // add path to class
-      vmOption.push_back("-Xcheck:jni"); // debug mode
-      vmOption.push_back("-ea"); // enable java assertion
-      
-      // creates JVM
-      CJ.createVM(vmOption);
-      
-      ...
-  }
-  ```
-
-* Obtain the signatures/descriptions of your java class:
-  
   ```bash
   $ javap -s -p <your_java_class>.class
   ```
 
-* Set the signatures you just obtained:
-
-  The ``setSignature`` member function has the parameters:
+* **Set the signatures** you just obtained calling ``setSignature``.
+* **Load/Set** the java **class**.
+* **Call** Java class **constructor** (if you have to call non-static methods).
+* **Call** Java **method**
   
-  * key (**string**). *The name of the java method.*
+  *Here another example.*
   
-  * descriptor (**string**). *The descriptor of the java method.*
+  Consider we have a java method ``parseString`` that recieves type ``java.lang.String`` and returns ``java.lang.String``.
   
-  * isStatic  (**boll**). *True if the method is static.*
-
-  ```cpp
-  CJ.setSignature("<init>","<constructor_descriptor>",false); // the method name of constructor is always <init>. 
-  CJ.setSignature("<merthod_name>","<merthod_descriptor>",false); // add each method you want to call.
-  ```
-
-- Load/Set the java class:
-
-  ```cpp
-  CJ.setClass( "<your_class_name>" );
-  ```
-
-* Call java class constructor (if you have to call non-static methods):
-
-  In the example below we consider a class method that recieves a Java ``string`` as argument.
-  In order to create a Java ``string`` (``java.lang.String``) we need to instantiate a ``Conveter``.
-  
-  ```cpp  
-  // Instantiate converter
-  Converter cnv;
-  
-  // Call constructor
-  CJ.callClassConstructor(NULL); // In this example the constructor has no argument.
-  ```
-
-* Call java method:
-  
-  For illustration purposes consider a java method ``parseString`` that recieves type ``java.lang.String`` and returns ``java.lang.String``.
-  
-  **IMPORATNT:** See we have only one ``call<T>`` entry point, regardless the method descriptor. It is a variadic member. The member function ``call<T>`` is temaplted based on the method return value.
+  **IMPORATNT:** *See we only have one ``call<T>`` entry point, regardless the method descriptor. It is a variadic member. The member function ``call<T>`` is temaplated based on the method return type.*
   
   ```cpp
-  jobject L = CJ.call<jobject>( "parseString", cnv.j_cast<jstring>("foo") ); // call
-  std::string str = cnv.c_cast<std::string>(L); // Now, cast back: FROM java.lang.String TO C++ string (c_cast)
-  assert ( str == std::string("foo") );
+  // cast FROM C++ "string" TO Java "java.leng.String"
+  jstring arg = cnv.j_cast<jstring>("foo");
+  // call Java method
+  jobject L = CJ.call<jobject>( "parseString", cnv.j_cast<jstring>("foo") ); 
+  // cast FROM "java.lang.String" TO C++ "string"
+  std::string str = cnv.c_cast<std::string>(L);
   ```
 
-* Destroy JVM when your are done
-
-  ```cpp
-  CJ.destroyVM();
-  ```
+* **Destroy** JVM when you are done
 
 Compiler, Linker and System Variables
 -------------------------------------
@@ -225,7 +173,7 @@ In case you want to run unit tests make sure your `CLASSPATH` system enviroment 
 
 The `java/bin` folder has sub-folder `example` with the class library `Example.class`. Its source code can be found in `java/src` folder.
 
-The source code exaustevely covers many methods with different signatures. Maybe it is the best way to learn the seamless integration of ``CJay`` C++ library.
+The source code exaustevely covers many methods with different signatures. Maybe it is the best way to review the seamless integration of ``CJay`` C++ library.
 
 Compile and run ``UnitTest.cpp``.
 
@@ -250,7 +198,7 @@ License
 
 ``CJay`` is licensed under [Apache Version 2.0] (http://www.apache.org/licenses/>).
 
-Copyright (c) 2014, Marcelo Sardelich
+Copyright (c) 2014, Marcelo Sardelich <MSardelich@gmail.com>
 
 All rights reserved.
 
