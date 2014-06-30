@@ -1,6 +1,5 @@
 /**************************************************************************
- *
- * Copyright 2014 Marcelo Sardelich
+ * Copyright 2014 Marcelo Sardelich <MSardelich@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +39,6 @@ int main (int argc, char* argv[]) {
 
     std::vector<std::string> vmOption;
     vmOption.push_back(paramPath);
-    vmOption.push_back("-Xcheck:jni"); // "-Xnoclassgc"
-    vmOption.push_back("-ea"); // enable java assertion
 
     // Create JVM
     try {
