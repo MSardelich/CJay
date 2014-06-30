@@ -73,7 +73,8 @@ int main (int argc, char* argv[]) {
     //
     // Important:
     // Run the command "$ javap -s -p emxample.class" to get all the information you need.
-    // "setSignature" method has the arguments: <method_name>, <method_description>, <method_is_static>.
+    // "setSignature" method has the arguments:
+    // (<method_name>, <method_description>, <method_is_static>).
     //
     CJ.setSignature( "parseArrayListInteger", "(II)Ljava/util/ArrayList;", true );
     CJ.setSignature( "<init>", "()V", false ); // class constructor always use <init> signature
