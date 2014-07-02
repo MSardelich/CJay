@@ -10,9 +10,9 @@ Why?
   On the other hand, ``CJay`` has **only one call method** (``CJ::call<T>``) for all types of description/signature.
 * ``CJay`` comes with a **conversion class** (``Convert``) that straightforwardly **cast types** from C++ to Java and **vice versa**. The conversion class can, for exmaple, convert from Java ``Arraylist<T>`` to C++ ``Vector<T>``. See ``CJ::c_cast_vector<T>`` and ``CJ::c_cast<T>`` for general primitive types.
 * Transparent interface **method caching**. Register your Java methods only once, use them around the code.
-* ``Cjay`` emulates **reflection** using standard C++ Maps (you can instantiate Java classes and invoke methods by string name).   
+* ``CJay`` emulates **reflection** using standard C++ Maps (you can instantiate Java classes and invoke methods by string name).   
 * You can still **use** functions in ``jni.h``. Just get the Java Virtual Machine enviroment pointer: ``VM::env``.
-* Only **one header file**: ``Cjay.hpp``
+* Only **one header file**: ``CJay.hpp``
 * **Exception handler** with clear and informative error messages.
 
 Life Made Easy!
@@ -49,7 +49,7 @@ The code below shows a typical C++ ``Cjay`` library implementation:
 #include <string>
 #include <vector>
 
-#include "Cjay.hpp"
+#include "CJay.hpp"
 
 using namespace VM;
 
@@ -121,7 +121,7 @@ General Implementation Steps
 
 A standard implementation should follow the steps below.
 
-* Include library **header file**: ``Cjay.hpp``.
+* Include library **header file**: ``CJay.hpp``.
 * **Assign ``JNI_VERSION``** variable (it must be compatible with the versions described in your ``<jni.h>``).
 * Define **JVM path**, additional flags and **create JVM**.
 * Obtain the **signatures/descriptions** of your Java class:
@@ -161,16 +161,14 @@ Make sure compiler toolchain includes (-I option) your [Java&trade; Development 
 
 You must link (-L option) ``jvm`` file in [Java&trade; Development Kit (JDK)] (http://www.oracle.com/technetwork/java/javase/downloads/index.html?ssSourceSiteId=ocomen>) ``lib`` folder, and set the system ``path`` to this folder.
 
-``Cjay`` is **C++11** compatible, so add ``-std=c++11`` flag to compiler.
+``CJay`` is **C++11** compatible, so add ``-std=c++11`` flag to compiler.
 
-Don't forget to add to `CLASSPATH` system enviroment variable the path to Java class library that you want to integrate.
+Make sure your `CLASSPATH` system enviroment variable includes path to your local copy of ``java/bin`` repository folder and to java class you want to call from C++.
 
 ``CJay`` library was extensevely tested with the configuration: ``g++ (GCC) 4.8.1`` and `Java(TM) SE Runtime Environment 1.8`
 
 Unit tests
 ----------
-
-In case you want to run unit tests make sure your `CLASSPATH` system enviroment variable includes path to your local copy of ``java/bin`` repository folder.
 
 The `java/bin` folder has sub-folder `example` with the class library `Example.class`. Its source code can be found in `java/src` folder.
 
