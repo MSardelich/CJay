@@ -3,6 +3,10 @@ CJay -- Java&trade; Native Interface made easy
 
 Seamlessly call Java classes (here the "*jay*") from C++. The ``Cjay`` C++ library abstracts the use of Java&trade; Native Interface.
 
+``CJay`` comes with a ``Converter`` class that straightforwardly **cast** from *primitive wrapper classes* and some ``java.util`` classes to some C++ STL objects and vice versa.
+
+The cast is performed using only **one member function call**. See, for example, ``j_cast<T>``, ``c_cast<T>``, ``c_cast_vector<T>``, ``c_cast_map<K,V>``.
+
 Why?
 ----
 
@@ -179,7 +183,7 @@ Compile and run ``UnitTest.cpp``.
 TODO
 ----
 
-* Improve ``Converter`` class, including, for example, a caster from ``java.util.Map<T>`` to C++ ``Map<T>``
+* ~~Improve ``Converter`` class, including, for example, a caster from ``java.util.Map<T>`` to C++ ``Map<T>``~~
 * Add methods to main ``CJ`` class in order to acess Java class *fields*.
 * Write documentation.
 
