@@ -22,7 +22,7 @@
 #include <map>
 #include <cassert>
 
-#include "Cjay.hpp"
+#include "CJay.hpp"
 
 #define MAX_TOLERANCE 1.0e-4
 
@@ -136,6 +136,7 @@ int main (int argc, char* argv[]) {
 
         L = CJ.call<jobject>( "parseArrayListInteger", (jint) 123, (jint) 456 );
         std::vector<jint> vi = cnv.c_cast_vector<jint>(L, 2); // From ArrayList<Integer> To vector<jint> (or vector<long>)
+        //std::cout << vi[0] << " " << vi[1] << std::endl;
         assert ( vi[0] == 123 ); assert( vi[1] == 456 );
 
         L = CJ.call<jobject>( "parseArrayListLong", (jlong) 123456, (jlong) 123789 );
@@ -157,6 +158,10 @@ int main (int argc, char* argv[]) {
         L = CJ.call<jobject>( "parseArrayListString", cnv.j_cast<jstring>("foo") , cnv.j_cast<jstring>("bar"));
         std::vector<std::string> v_str = cnv.c_cast_vector<std::string>(L, 2); // From ArrayList<String> To vector<string>
         assert ( v_str[0] == "foo" ); assert( v_str[1] == "bar" );
+
+        L = CJ.call<jobject>( "parseSimpleMap", cnv.j_cast<jstring>("foo") , cnv.j_cast<jstring>("bar"), cnv.j_cast<jstring>("foo.bar"));
+        std::map<std::string, std::string> m_str_str = cnv.c_cast_map<std::string, std::string>(L); // From java.util.Map<String, String> To std::map<string, string>
+        assert ( m_str_str["arg 1"] == "foo" ); assert ( m_str_str["arg 2"] == "bar" ); assert ( m_str_str["arg 3"] == "foo.bar" );
 
     } catch(std::exception& e) {
         std::cout << e.what() << std::endl;
