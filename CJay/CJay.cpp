@@ -67,6 +67,30 @@ CJ::~CJ() {
     }
 }
 
+void CJ::getClassMethods(std::string className) {
+    jclass classReflect = env->FindClass(className.c_str());
+    jclass classCore = env->FindClass("cjay/reflect/Core");
+    jclass classArrayList = env->FindClass("java/util/ArrayList");
+
+    jmethodID midConstructor = env->GetMethodID(classCore, "<init>", "(Ljava/lang/Class;)V");
+    jmethodID midMethodNames = env->GetMethodID(classCore, "getArrayListOfMethodNames", "()Ljava/util/ArrayList;");
+    jmethodID midMethodDescriptors = env->GetMethodID(classCore, "getArrayListOfMethodDescriptors", "()Ljava/util/ArrayList;");
+    jmethodID midGet = env->GetMethodID(classArrayList, "get", "(I)Ljava/lang/Object;");
+    jmethodID midSize = env->GetMethodID(classArrayList, "size", "()I");
+
+    jobject jobj = env->NewObject(classCore, midConstructor, classReflect);
+
+    jobject arrayListMethodNames = env->CallObjectMethod(jobj, midMethodNames);
+    jint arrayListSize = env->CallIntMethod(arrayListMethodNames, midSize);
+
+    jobject e;
+    for(jint i = 0 ; i < arrayListSize ; i++) {
+        e = env->CallObjectMethod(arrayListMethodNames, midGet, (jint) i); // get each method name
+        std::string methodName(env->GetStringUTFChars((jstring) e, JNI_FALSE));
+        std::cout << methodName << std::endl;
+    }
+
+}
 void CJ::setSignature(std::string key, std::string descriptor, bool isStatic) {
     SignatureBase* signature;
 	std::string rv;

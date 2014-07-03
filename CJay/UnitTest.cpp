@@ -49,6 +49,8 @@ int main (int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    CJ.getClassMethods("example/Example");
+
     // Set member signatures
     CJ.setSignature( "<init>", "()V", false );
     CJ.setSignature( "parseBoolean", "(Z)Z", false );

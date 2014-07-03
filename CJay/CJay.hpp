@@ -70,6 +70,7 @@ protected:
     jobject obj;
 public:
     static jint JNI_VERSION;
+    void getClassMethods(std::string);
     void setSignature(std::string, std::string, bool);
     void printSignatures();
     jclass getClass();
