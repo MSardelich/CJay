@@ -24,16 +24,146 @@ namespace VM {
 JNIEnv* env = NULL;
 JavaVM* jvm = NULL;
 
-// SignatureBase Members
-SignatureBase::SignatureBase(std::string descriptor, bool isStatic) :
-    descriptor(descriptor), isStatic(isStatic), mid(NULL) { }
+inline std::string getParmPath() {
+    char* pPath = getenv("CLASSPATH");
+    if(pPath == NULL) {
+        throw HandlerExc("CJay: You have to set system environment variable CLASSPATH. Don't forget to add the path to java class you want to call from C++");
+    }
+    std::string parmPath = std::string("-Djava.class.path=") + std::string(pPath);
+    return parmPath;
+}
 
-SignatureBase::SignatureBase() : descriptor(""), isStatic(true), mid(NULL) { }
+inline jint createJavaVM(JavaVMInitArgs& vm_args) {
+    return JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args); // create only once with global variables
+}
+
+inline char* TOCHAR (std::string str) {
+    char * writable = new char[str.size() + 1];
+    std::copy(str.begin(), str.end(), writable);
+    writable[str.size()] = '\0'; // don't forget the terminating 0
+
+    return writable;
+}
+
+void createVM(std::vector<std::string>& vmOption) {
+    if (env == NULL || jvm == NULL) {
+        int nOptions = vmOption.size();
+
+        JavaVMInitArgs vm_args;
+        JavaVMOption* options = new JavaVMOption[nOptions + 1];
+
+        // Assign options
+        for (std::vector<std::string>::iterator it = vmOption.begin(); it != vmOption.end(); ++it) {
+            options[it-vmOption.begin()].optionString = const_cast<char*>(it->c_str()); //(char*) it->c_str();
+        }
+        // Add CLASSPATH parameter
+        char* paramPath = TOCHAR(getParmPath());
+        options[nOptions].optionString = paramPath;
+        // Assign vm_args
+        vm_args.version = CJ::JNI_VERSION;
+        vm_args.nOptions = nOptions + 1;
+        vm_args.options = options;
+        vm_args.ignoreUnrecognized = JNI_FALSE;
+        // Create JavaVM
+        jint status = createJavaVM(vm_args);
+        //int status = JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args); // create only once with global variables
+        // Check Status
+        if(status != JNI_OK) {
+            delete[] paramPath;
+            delete[] options;
+            throw HandlerExc("JNI: Unable to launch JVM. JNI_CreateJavaVM call failed.");
+        }
+        delete[] paramPath;
+        delete options; // clean memory leaks
+    }
+}
+
+void createVM() {
+    if (env == NULL || jvm == NULL) {
+        JavaVMInitArgs vm_args;
+        JavaVMOption* options = new JavaVMOption[1];
+
+        // Add CLASSPATH parameter to options
+        char* paramPath = TOCHAR(getParmPath());
+        options[0].optionString = paramPath;
+        // Assign vm_args
+        vm_args.version = CJ::JNI_VERSION;
+        vm_args.nOptions = 1;
+        vm_args.options = options;
+        vm_args.ignoreUnrecognized = JNI_FALSE;
+        // Create JavaVM
+        jint status = createJavaVM(vm_args);
+        //int status = JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args); // create only once with global variables
+        // Check status
+        if(status != JNI_OK) {
+            delete[] paramPath;
+            delete[] options;
+            throw HandlerExc("JNI: Unable to launch JVM. JNI_CreateJavaVM call failed.");
+        }
+        delete[] paramPath;
+        delete[] options; // clean memory leaks
+    }
+}
+
+void destroyVM() {
+    jvm->DestroyJavaVM();
+}
+
+template <> std::string FromJavaObjectToCpp(jobject x) {
+    std::string str = std::string(env->GetStringUTFChars((jstring) x, JNI_FALSE));
+    return str;
+}
+
+template <> bool FromJavaObjectToCpp(jobject x) {
+    //jclass UTIL = env->FindClass("cjay/converter/Util");
+    //jmethodID midCastBoolean = env->GetStaticMethodID(UTIL, "FromObjectToBoolean", "(Ljava/lang/Object;)Ljava/lang/Boolean;");
+    jclass BOOLEAN = env->FindClass("java/lang/Boolean");
+    jmethodID midBooleanValue = env->GetMethodID(BOOLEAN, "booleanValue", "()Z");
+
+    //jobject jWCBoolean = env->CallStaticObjectMethod(UTIL, midCastBoolean, x);
+    //jboolean jBoolean = env->CallBooleanMethod(jWCBoolean, midBooleanValue);
+    jboolean jBoolean = env->CallBooleanMethod(x, midBooleanValue);
+
+    return (bool) jBoolean;
+}
+
+template <typename To> std::vector<To> FromALToVector(jobject arrayList) {
+    jclass ARRAYLIST = env->FindClass("java/util/ArrayList");
+    jmethodID midGet = env->GetMethodID(ARRAYLIST, "get", "(I)Ljava/lang/Object;");
+    jmethodID midSize = env->GetMethodID(ARRAYLIST, "size", "()I");
+
+    std::vector<To> cVec;
+
+    jint size = env->CallIntMethod(arrayList, midSize);
+    for(jint i = 0; i < size ; i++) {
+        jobject jobj = env->CallObjectMethod(arrayList, midGet, i);
+        cVec.push_back(FromJavaObjectToCpp<To>(jobj));
+    }
+
+    return cVec;
+}
+
+template std::vector<std::string> FromALToVector(jobject);
+template std::vector<bool> FromALToVector(jobject);
+
+// JavaMethodReflect Members
+JavaMethodReflect::JavaMethodReflect(std::string name, std::string descriptor, bool isStatic) :
+    name(name), descriptor(descriptor), isStatic(isStatic) { }
+
+JavaMethodReflect::JavaMethodReflect() : name(""), descriptor(""), isStatic(false) { }
+JavaMethodReflect::~JavaMethodReflect() { }
+
+// Signature Base Memebrs
+SignatureBase::SignatureBase(std::string name, std::string descriptor, bool isStatic) :
+    name(name), descriptor(descriptor), isStatic(isStatic) , mid(NULL) { }
+
+SignatureBase::SignatureBase() : name(""), descriptor(""), isStatic(false), mid(NULL) { }
 SignatureBase::~SignatureBase() { }
 
 // Signature Members
-template <class To> Signature<To>::Signature(std::string descriptor, bool isStatic, RV rv):
-        SignatureBase(descriptor, isStatic) {
+template <class To> Signature<To>::Signature(
+        std::string name, std::string descriptor, bool isStatic, RV rv) :
+        SignatureBase(name, descriptor, isStatic) {
 
     this->rv = rv;
 
@@ -56,79 +186,140 @@ template <class To> Signature<To>::~Signature() { }
 // CJ Members
 
 CJ::CJ() : clazz(NULL), obj(NULL) {
-    this->m.clear();
+    this->methodLinkage.clear();
 }
 
 CJ::~CJ() {
     // avoid memory leaks
-    for (auto& kv : this->m) {
+    for (auto& kv : this->methodLinkage) {
         delete kv.second;
         kv.second = NULL;
     }
 }
 
-void CJ::getClassMethods(std::string className) {
-    jclass classReflect = env->FindClass(className.c_str());
-    jclass classCore = env->FindClass("cjay/reflect/Core");
-    jclass classArrayList = env->FindClass("java/util/ArrayList");
+void CJ::assignMethodReflectCollection() {
+    jclass clazzReflect = env->FindClass("cjay/reflect/Signature");
+    // Reflect methodIDs
+    jmethodID midConstructor = env->GetMethodID(clazzReflect, "<init>", "(Ljava/lang/Class;)V");
+    jmethodID midNames = env->GetMethodID(clazzReflect, "getAllMembersNames", "()Ljava/util/ArrayList;");
+    jmethodID midDescriptors = env->GetMethodID(clazzReflect, "getAllMembersDescriptors", "()Ljava/util/ArrayList;");
+    jmethodID midIsStatic = env->GetMethodID(clazzReflect, "getAllMembersIsStatic", "()Ljava/util/ArrayList;");
 
-    jmethodID midConstructor = env->GetMethodID(classCore, "<init>", "(Ljava/lang/Class;)V");
-    jmethodID midMethodNames = env->GetMethodID(classCore, "getArrayListOfMethodNames", "()Ljava/util/ArrayList;");
-    jmethodID midMethodDescriptors = env->GetMethodID(classCore, "getArrayListOfMethodDescriptors", "()Ljava/util/ArrayList;");
-    jmethodID midGet = env->GetMethodID(classArrayList, "get", "(I)Ljava/lang/Object;");
-    jmethodID midSize = env->GetMethodID(classArrayList, "size", "()I");
+    // Call constructor
+    jobject oReflect = env->NewObject(
+            clazzReflect,
+            midConstructor,
+            this->clazz
+            );
 
-    jobject jobj = env->NewObject(classCore, midConstructor, classReflect);
+    jobject ALNames = env->CallObjectMethod(oReflect, midNames);
+    jobject ALDescriptors = env->CallObjectMethod(oReflect, midDescriptors);
+    jobject ALIsStatic = env->CallObjectMethod(oReflect, midIsStatic);
 
-    jobject arrayListMethodNames = env->CallObjectMethod(jobj, midMethodNames);
-    jint arrayListSize = env->CallIntMethod(arrayListMethodNames, midSize);
+    // Convert from Java Array List to C++ STL vetcor
+    std::vector<std::string> names = FromALToVector<std::string>(ALNames);
+    std::vector<std::string> descriptors = FromALToVector<std::string>(ALDescriptors);
+    std::vector<bool> isStatic = FromALToVector<bool>(ALIsStatic);
 
-    jobject e;
-    for(jint i = 0 ; i < arrayListSize ; i++) {
-        e = env->CallObjectMethod(arrayListMethodNames, midGet, (jint) i); // get each method name
-        std::string methodName(env->GetStringUTFChars((jstring) e, JNI_FALSE));
-        std::cout << methodName << std::endl;
+    // Create unique keys based on method names.
+    // IMPORTANT: Overloaded java methods have the same name with different signatures.
+    // We need to accord on how to uniquely refer to these method.
+    // The convention: unique_key = <original_method_name>_<a_number>
+
+    // Search what method were overloaded,
+    // in other words, the methods that have the same name.
+    this->isNonUnique.clear();
+    for(size_t i = 0 ; i < names.size(); i++) {
+        for(size_t j = 0 ; j < names.size(); j++) {
+            if(names[i] == names[j] && i != j) {
+                this->isNonUnique.insert(isNonUniqueCollection::value_type(names[i], 0)); // Store non-unique method name
+            }
+        }
     }
 
+    // Assign keys, taking overloaded methods convention into account
+    std::vector<std::string> keys;
+    std::string key;
+    int timesNameRepeat;
+    std::string intString;
+    for(auto& name : names) {
+        if (this->isNonUnique.find(name) == this->isNonUnique.end() ) { // current name is unique
+            key.assign(name);
+        } else { // current method name is non-unqiue
+            timesNameRepeat = this->isNonUnique[name] + 1;
+            // add line below because gcc complier complains with standard C++11 "std::to_string" instruction.
+            intString.assign(static_cast<std::ostringstream*>( &(std::ostringstream() << timesNameRepeat) )->str());
+            key.assign(name + "_" + intString);
+            this->isNonUnique[name] = timesNameRepeat;
+        }
+        keys.push_back(key);
+    }
+
+    // Assign method reflect
+    this->methodReflect.clear();
+    for(size_t i = 0; i < keys.size(); i++) {
+        JavaMethodReflect methodR(names[i], descriptors[i], isStatic[i]);
+        this->methodReflect.insert(methodReflectCollection::value_type(keys[i], methodR));
+    }
 }
-void CJ::setSignature(std::string key, std::string descriptor, bool isStatic) {
+
+void CJ::assignMethodLinkageCollection() {
     SignatureBase* signature;
-	std::string rv;
+    std::string rv; // method return value
+    std::string key; // the unique identifier of method
+    JavaMethodReflect methodR; // method details (java reflection)
+    std::string name;
+    std::string descriptor;
+    bool isStatic;
 
-	// Extract the return value of method
-	// based on its descriptor
-	std::size_t pos = descriptor.find(")");
-	rv = descriptor[pos+1];
-    if (rv == "[") { rv = descriptor[pos+2]; } // array cases
+    for(auto& kv : this->methodReflect) {
+        key = kv.first;
+        methodR = kv.second;
+        name.assign(methodR.name);
+        descriptor.assign(methodR.descriptor);
+        isStatic = methodR.isStatic;
 
-    // Assign the type of return variable.
-    switch (*rv.c_str())
-    {
-    case 'Z' : signature = new Signature<jboolean>(descriptor, isStatic, RV::Z); break;
-    case 'B' : signature = new Signature<jbyte>(descriptor, isStatic, RV::B); break;
-    case 'C' : signature = new Signature<jchar>(descriptor, isStatic, RV::C); break;
-    case 'S' : signature = new Signature<jshort>(descriptor, isStatic, RV::S); break;
-    case 'I' : signature = new Signature<jint>(descriptor, isStatic, RV::I); break;
-    case 'J' : signature = new Signature<jlong>(descriptor, isStatic, RV::J); break;
-    case 'F' : signature = new Signature<jfloat>(descriptor, isStatic, RV::F); break;
-    case 'D' : signature = new Signature<jdouble>(descriptor, isStatic, RV::D); break;
-    case 'L' : signature = new Signature<jobject>(descriptor, isStatic, RV::L); break;
-    case 'V' : signature = new Signature<void>(descriptor, isStatic, RV::VV); break;
-    default :
-        throw HandlerExc("Malformed method descriptor. Please review syntax.");
+        // Extract method return value
+        std::size_t pos = descriptor.find(")");
+        rv = descriptor[pos+1];
+        if (rv == "[") { rv = descriptor[pos+2]; } // array case
+
+        // Assign signature
+        switch (*rv.c_str())
+        {
+        case 'Z' : signature = new Signature<jboolean>(name, descriptor, isStatic, RV::Z); break;
+        case 'B' : signature = new Signature<jbyte>(name, descriptor, isStatic, RV::B); break;
+        case 'C' : signature = new Signature<jchar>(name, descriptor, isStatic, RV::C); break;
+        case 'S' : signature = new Signature<jshort>(name, descriptor, isStatic, RV::S); break;
+        case 'I' : signature = new Signature<jint>(name, descriptor, isStatic, RV::I); break;
+        case 'J' : signature = new Signature<jlong>(name, descriptor, isStatic, RV::J); break;
+        case 'F' : signature = new Signature<jfloat>(name, descriptor, isStatic, RV::F); break;
+        case 'D' : signature = new Signature<jdouble>(name, descriptor, isStatic, RV::D); break;
+        case 'L' : signature = new Signature<jobject>(name, descriptor, isStatic, RV::L); break;
+        case 'V' : signature = new Signature<void>(name, descriptor, isStatic, RV::VV); break;
+        default :
+            throw HandlerExc("CJay Error: Malformed method descriptor.");
+        }
+
+        // Store linkage
+        this->methodLinkage.insert(methodLinkageCollection::value_type(key, signature));
     }
-    this->m.insert(signature_t::value_type(key, signature));
+}
+
+void CJ::assignCollections() {
+    this->assignMethodReflectCollection();
+    this->assignMethodLinkageCollection();
 }
 
 void CJ::printSignatures() {
-    for (auto& it : m) {
+    for (auto& it : methodReflect) {
         std::string key = it.first;
         std::cout <<
                 "<" <<
-                "Method:" << key <<
-                ", Descriptor:" << this->m[key]->descriptor <<
-                ", isStatic:" << this->m[key]->isStatic <<
-                //", RV:" << this->m[key]->rv <<
+                "Unique Key:" << key <<
+                ", Name: " << this->methodLinkage[key]->name <<
+                ", Descriptor: " << this->methodLinkage[key]->descriptor <<
+                ", isStatic: " << this->methodLinkage[key]->isStatic <<
                 ">" <<
                 std::endl;
     }
@@ -142,8 +333,23 @@ jobject CJ::getObj() {
     return this->obj;
 }
 
-signature_t CJ::getMap() {
-    return this->m;
+std::string CJ::getUniqueKey(std::string name, std::string descriptor) {
+    std::string keyMatch = "";
+    for(auto& kv : this->methodLinkage) {
+        if( (name == kv.second->name) && (descriptor == kv.second->descriptor) ) {
+            keyMatch.assign(kv.first);
+            break;
+        }
+    }
+    if(keyMatch == "") {
+        throw HandlerExc("CJay: There is no java method with name equal to " + name + " and descriptor equal to " + descriptor);
+    }
+
+    return keyMatch;
+}
+
+methodLinkageCollection CJ::getMap() {
+    return this->methodLinkage;
 }
 
 std::string CJ::getDescriptor(std::string key) {
@@ -155,64 +361,40 @@ jmethodID CJ::getMid(std::string key) {
 }
 
 int CJ::getSizeSignatures() {
-    return m.size();
-}
-
-void CJ::createVM(std::vector<std::string> vmOption) {
-    if (env == NULL || jvm == NULL) {
-        int nOptions = vmOption.size();
-
-        JavaVMInitArgs vm_args;
-        JavaVMOption* options = new JavaVMOption[nOptions];
-
-        for (std::vector<std::string>::iterator it = vmOption.begin(); it != vmOption.end(); ++it) {
-            options[it-vmOption.begin()].optionString = (char*) it->c_str();
-        }
-
-        vm_args.version = VM::CJ::JNI_VERSION;
-        vm_args.nOptions = nOptions;
-        vm_args.options = options;
-        vm_args.ignoreUnrecognized = JNI_FALSE;
-        int status = JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args); // create only once with global variables
-        if(status != JNI_OK) {
-            delete options;
-            throw HandlerExc("Unable to Launch JVM");
-        }
-
-        delete options; // clean memory leaks
-    }
-}
-
-void CJ::destroyVM() {
-    jvm->DestroyJavaVM();
+    return this->methodLinkage.size();
 }
 
 void CJ::setClass(std::string className) {
     if (env == NULL || jvm == NULL) {
-    	throw HandlerExc("JVM was not instantiated. Please call member createJVM.");
+    	throw HandlerExc("CJay: No Java Virtual Machine instance. Please, call VM::createVM beforehand.");
     }
 
-	this->className = className;
-    this->clazz = env->FindClass(className.c_str());
-    if (this->clazz == NULL) {
+    jclass clazz = env->FindClass(className.c_str());
+	if (clazz == NULL) {
         jthrowable exc = env->ExceptionOccurred();
         if (exc) {
             env->ExceptionDescribe();
             env->ExceptionClear();
-            throw HandlerExc("JVM: Can't find class: " + className);
+            throw HandlerExc("JNI: Can't find class " + className);
         }
     }
+	this->className = className;
+	this->clazz = clazz;
 
-    VM::SignatureBase* obj;
+	// Assign: Java Reflect Collection & Method Linkage
+	this->assignCollections();
+
+	// Set methodID of signatures
+    VM::SignatureBase* signature;
     jmethodID mid;
-    for (auto& it : this->m) {
+    for (auto& it : this->methodLinkage) {
         std::string key = it.first;
-        obj = it.second;
-        // assign values to be updated
-        if (obj->isStatic) {
-        	mid = env->GetStaticMethodID(this->clazz, key.c_str(), obj->descriptor.c_str());
+        signature = it.second;
+        // get methodID
+        if (signature->isStatic) {
+        	mid = env->GetStaticMethodID(this->clazz, signature->name.c_str(), signature->descriptor.c_str());
         } else {
-        	mid = env->GetMethodID(this->clazz, key.c_str(), obj->descriptor.c_str());
+        	mid = env->GetMethodID(this->clazz, signature->name.c_str(), signature->descriptor.c_str());
         }
         if (mid == NULL) {
             jthrowable exc;
@@ -221,29 +403,25 @@ void CJ::setClass(std::string className) {
                 env->ExceptionDescribe();
                 env->ExceptionClear();
                 throw HandlerExc(
-                        "Failed to get method ID. Please check the syntax of method: " +
-                        key +
-                        ", which has the descriptor: " +
-                        obj->descriptor
-                        );
+                    "JNI: Failed to get method ID of " + key + " with descriptor: " + signature->descriptor);
             }
         }
-        // update map
+        // update signature
         it.second->mid = mid;
     }
 
 }
 
 VM::SignatureBase* CJ::getSignatureObj(std::string key) {
-    if ( this->m.find(key) == this->m.end() ) {
+    if ( this->methodLinkage.find(key) == this->methodLinkage.end() ) {
         throw HandlerExc("Key does not exit. Use setSignature member beforehand.");
     }
-    return this->m[key];
+    return this->methodLinkage[key];
 }
 
-void CJ::callClassConstructor_(int mangledVar, ...) {
+void CJ::Constructor(std::string key, ...) {
     // Get Method Id (Constructor)
-    VM::SignatureBase* sig = this->getSignatureObj(CONSTRUCTOR_METHOD_NAME);
+    VM::SignatureBase* sig = this->getSignatureObj(key);
     jmethodID mid = sig->mid;
     jobject obj;
 
@@ -252,7 +430,7 @@ void CJ::callClassConstructor_(int mangledVar, ...) {
     }
 
     va_list args;
-    va_start(args, mangledVar);
+    va_start(args, key);
 
     obj = env->NewObjectV(this->clazz, mid, args);
 
@@ -261,8 +439,8 @@ void CJ::callClassConstructor_(int mangledVar, ...) {
     this->obj = obj;
 }
 
-template <typename To> To CJ::call(std::string methodName, ...) {
-    SignatureBase* sigSuper = this->getSignatureObj(methodName);
+template <typename To> To CJ::call(std::string key, ...) {
+    SignatureBase* sigSuper = this->getSignatureObj(key);
     Signature<To>* sigChild = dynamic_cast<Signature<To>*>(sigSuper);
     jmethodID mid = sigChild->mid;
     To (CJ::*pCall) (jmethodID, va_list);
@@ -270,7 +448,7 @@ template <typename To> To CJ::call(std::string methodName, ...) {
     To jobj;
 
     va_list args;
-    va_start(args, methodName);
+    va_start(args, key);
 
     jobj = (this->*pCall) (mid, args);
 
@@ -279,31 +457,31 @@ template <typename To> To CJ::call(std::string methodName, ...) {
     return jobj;
 }
 
-template <> void CJ::call(std::string methodName, ...) {
-    SignatureBase* sigSuper = this->getSignatureObj(methodName);
+template <> void CJ::call(std::string key, ...) {
+    SignatureBase* sigSuper = this->getSignatureObj(key);
     Signature<void>* sigChild = dynamic_cast<Signature<void>*>(sigSuper);
     jmethodID mid = sigChild->mid;
     void (CJ::*pCall) (jmethodID, va_list);
     pCall = sigChild->pCall;
 
     va_list args;
-    va_start(args, methodName);
+    va_start(args, key);
 
     (this->*pCall) (mid, args);
 
     va_end(args);
 }
 
-template jboolean CJ::call(std::string methodName, ...);
-template jbyte CJ::call(std::string methodName, ...);
-template jchar CJ::call(std::string methodName, ...);
-template jshort CJ::call(std::string methodName, ...);
-template jint CJ::call(std::string methodName, ...);
-template jlong CJ::call(std::string methodName, ...);
-template jfloat CJ::call(std::string methodName, ...);
-template jdouble CJ::call(std::string methodName, ...);
-template jobject CJ::call(std::string methodName, ...);
-template void CJ::call(std::string methodName, ...);
+template jboolean CJ::call(std::string, ...);
+template jbyte CJ::call(std::string, ...);
+template jchar CJ::call(std::string, ...);
+template jshort CJ::call(std::string, ...);
+template jint CJ::call(std::string, ...);
+template jlong CJ::call(std::string, ...);
+template jfloat CJ::call(std::string, ...);
+template jdouble CJ::call(std::string, ...);
+template jobject CJ::call(std::string, ...);
+template void CJ::call(std::string, ...);
 
 template <> jboolean CJ::callStatic(jmethodID mid, va_list args) {
     return env->CallStaticBooleanMethodV(this->clazz, mid, args);
@@ -423,118 +601,64 @@ ConverterBase::~ConverterBase() { }
 Converter::Converter(): ConverterBase() { this->init(); }
 Converter::~Converter() { }
 
-void Converter::initCORE() {
-    CORE.setSignature( "FromMapToArrayListOfKeys" , "(Ljava/util/Map;)Ljava/util/ArrayList;" , true );
-    CORE.setSignature( "FromMapToArrayListOfValues" , "(Ljava/util/Map;)Ljava/util/ArrayList;" , true );
-
-    CORE.setClass("cjay/CJay");
+void Converter::initUTIL() {
+    UTIL.setClass("cjay/converter/Util");
 }
 
 void Converter::initARRAYLIST() {
-    ARRAYLIST.setSignature( "toString", "()Ljava/lang/String;", false );
-    ARRAYLIST.setSignature( "get", "(I)Ljava/lang/Object;", false );
-    ARRAYLIST.setSignature( "size", "()I", false );
-
     ARRAYLIST.setClass("java/util/ArrayList");
 }
 
 void Converter::initSET() {
-    SET.setSignature( "iterator", "()Ljava/util/Iterator;", false );
-    SET.setSignature( "size", "()I", false );
-
     SET.setClass("java/util/Set");
 }
 
 void Converter::initCOLLECTION() {
-    COLLECTION.setSignature( "iterator", "()Ljava/util/Iterator;", false );
-    COLLECTION.setSignature( "size", "()I", false );
-
     COLLECTION.setClass("java/util/Collection");
 }
-/*
-void Converter::initITERATOR() {
-    ITERATOR_INTEGER.setSignature( "hasNext", "()Z", false );
-    //ITERATOR.setSignature( "next", "()I", false );
 
-    ITERATOR.setClass("java/util/Iterator");
-}
-*/
 void Converter::initMAP() {
-    MAP.setSignature( "keySet", "()Ljava/util/Set;", false );
-    MAP.setSignature( "values", "()Ljava/util/Collection;", false );
-    MAP.setSignature( "size", "()I", false );
-
     MAP.setClass("java/util/Map");
 }
 
 void Converter::initNUMBER() {
-    NUMBER.setSignature( "intValue", "()I", false );
-    NUMBER.setSignature( "longValue", "()J", false );
-    NUMBER.setSignature( "floatValue", "()F", false );
-    NUMBER.setSignature( "doubleValue", "()D", false );
-    NUMBER.setSignature( "shortValue", "()S", false );
-
     NUMBER.setClass("java/lang/Number");
 }
 
 void Converter::initBOOLEAN() {
-    BOOLEAN.setSignature( "booleanValue", "()Z", false );
-    BOOLEAN.setSignature( "valueOf", "(Z)Ljava/lang/Boolean;", true );
-
     BOOLEAN.setClass("java/lang/Boolean");
 }
 
 void Converter::initBYTE() {
-    BYTE.setSignature( "byteValue", "()B", false );
-    BYTE.setSignature( "valueOf", "(B)Ljava/lang/Byte;", true );
-
     BYTE.setClass("java/lang/Byte");
 }
 
 void Converter::initSHORT() {
-    SHORT.setSignature( "shortValue", "()S", false );
-    SHORT.setSignature( "valueOf", "(S)Ljava/lang/Short;", true );
-
     SHORT.setClass("java/lang/Short");
 }
 
 void Converter::initLONG() {
-    LONG.setSignature( "longValue", "()J", false );
-    LONG.setSignature( "valueOf", "(J)Ljava/lang/Long;", true );
-
     LONG.setClass("java/lang/Long");
 }
 
 void Converter::initINTEGER() {
-    INTEGER.setSignature( "intValue", "()I", false );
-    INTEGER.setSignature( "valueOf", "(I)Ljava/lang/Integer;", true );
-
     INTEGER.setClass("java/lang/Integer");
 }
 
 void Converter::initFLOAT() {
-    FLOAT.setSignature( "floatValue", "()F", false );
-    FLOAT.setSignature( "valueOf", "(F)Ljava/lang/Float;", true );
-
     FLOAT.setClass("java/lang/Float");
 }
 
 void Converter::initDOUBLE() {
-    DOUBLE.setSignature( "doubleValue", "()D", false );
-    DOUBLE.setSignature( "valueOf", "(D)Ljava/lang/Double;", true );
-
     DOUBLE.setClass("java/lang/Double");
 }
 
 void Converter::initCHARACTER() {
-    CHARACTER.setSignature( "charValue", "()C", false );
-    CHARACTER.setSignature( "valueOf", "(C)Ljava/lang/Character;", true );
-
     CHARACTER.setClass("java/lang/Character");
 }
 
 void Converter::init() {
-    this->initCORE();
+    this->initUTIL();
 
     this->initARRAYLIST();
     this->initSET();
@@ -629,6 +753,10 @@ template <> jboolean Converter::c_cast(jobject jobj) {
     return env->CallBooleanMethod(jobj, mid, NULL);
 }
 
+template <> bool Converter::c_cast(jobject jobj) {
+    return (bool) this->c_cast<jboolean>(jobj);
+}
+
 template <> jchar Converter::c_cast(jobject jobj) {
     jmethodID mid = CHARACTER.getSignatureObj("charValue")->mid;
     return env->CallCharMethod(jobj, mid, NULL);
@@ -644,6 +772,12 @@ template <> jobject Converter::c_cast(jobject jobj) {
 
 int Converter::sizeVector(jobject jobj) {
     VM::SignatureBase* sig = ARRAYLIST.getSignatureObj("size");
+
+    return env->CallIntMethod(jobj, sig->mid, NULL);
+}
+
+int Converter::sizeMap(jobject jobj) {
+    VM::SignatureBase* sig = MAP.getSignatureObj("size");
 
     return env->CallIntMethod(jobj, sig->mid, NULL);
 }
@@ -671,6 +805,8 @@ template std::vector<jshort> Converter::c_cast_vector(jobject, int);
 template std::vector<jlong> Converter::c_cast_vector(jobject, int);
 template std::vector<jfloat> Converter::c_cast_vector(jobject, int);
 template std::vector<jdouble> Converter::c_cast_vector(jobject, int);
+template std::vector<jboolean> Converter::c_cast_vector(jobject, int);
+template std::vector<bool> Converter::c_cast_vector(jobject, int);
 template std::vector<jbyte> Converter::c_cast_vector(jobject, int);
 template std::vector<jchar> Converter::c_cast_vector(jobject, int);
 template std::vector<jobject> Converter::c_cast_vector(jobject, int);
@@ -681,21 +817,23 @@ template std::vector<jshort> Converter::c_cast_vector(jobject);
 template std::vector<jlong> Converter::c_cast_vector(jobject);
 template std::vector<jfloat> Converter::c_cast_vector(jobject);
 template std::vector<jdouble> Converter::c_cast_vector(jobject);
+template std::vector<jboolean> Converter::c_cast_vector(jobject);
+template std::vector<bool> Converter::c_cast_vector(jobject);
 template std::vector<jbyte> Converter::c_cast_vector(jobject);
 template std::vector<jchar> Converter::c_cast_vector(jobject);
 template std::vector<jobject> Converter::c_cast_vector(jobject);
 template std::vector<std::string> Converter::c_cast_vector(jobject);
 
 jobject Converter::getKeysOfMap(jobject jmap) {
-    jmethodID mid = CORE.getSignatureObj("FromMapToArrayListOfKeys")->mid;
-    jobject arrayListOfKeys = env->CallStaticObjectMethod(CORE.getClass(), mid, jmap);
+    jmethodID mid = UTIL.getSignatureObj("FromMapToArrayListOfKeys")->mid;
+    jobject arrayListOfKeys = env->CallStaticObjectMethod(UTIL.getClass(), mid, jmap);
 
     return arrayListOfKeys;
 }
 
 jobject Converter::getValuesOfMap(jobject jmap) {
-    jmethodID mid = CORE.getSignatureObj("FromMapToArrayListOfValues")->mid;
-    jobject arrayListOfValues = env->CallStaticObjectMethod(CORE.getClass(), mid, jmap);
+    jmethodID mid = UTIL.getSignatureObj("FromMapToArrayListOfValues")->mid;
+    jobject arrayListOfValues = env->CallStaticObjectMethod(UTIL.getClass(), mid, jmap);
 
     return arrayListOfValues;
 }
