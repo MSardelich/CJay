@@ -181,10 +181,10 @@ class X {
 
 According to the exmaple above, you can check the key assigned to construtor that receives ``java.lang.Obejct`` using the code below:
 
-``cpp
+```cpp
 // Output key of constructor that receives java.lang.Object
 std::cout << CJ.getUniqueKey("<init>", "(Ljava/lang/Object;)V") << std::endl;   
-``
+```
 
 The above line of code is exepect to output ``<init>_1`` or ``<init>_2``.
 
