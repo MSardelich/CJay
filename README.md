@@ -20,7 +20,7 @@ Why?
 * **Exception handler** with clear and informative error messages.
 
 Life Made Easy!
----------------
+----------------
 
 For illustration purposes, suppose you have the following ``Example.java`` class, which you want to call from your C++ code:
 
