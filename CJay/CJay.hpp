@@ -14,15 +14,16 @@
  * limitations under the License.
  *
  ***************************************************************************/
-#ifndef HANDLER_H_
-#define HANDLER_H_
-#endif /* HANDLER_H_ */
+#ifndef CJAY_H_
+#define CJAY_H_
+#endif /* CJAY_H_ */
 
-#define callClassConstructor(...) callClassConstructor_(1, __VA_ARGS__)
+//#define callClassConstructor(...) callClassConstructor_(1, __VA_ARGS__)
 
 #include <iostream>
 #include <cstdlib>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <map>
 #include <exception>
@@ -48,42 +49,69 @@ enum class RV {
 extern JNIEnv* env;
 extern JavaVM* jvm;
 
+inline char* TOCHAR (std::string);
+
+jint createJavaVM(JavaVMInitArgs&);
+void createVM(std::vector<std::string>&);
+void createVM();
+void destroyVM();
+
+template <typename To> To FromJavaObjectToCpp(jobject);
+template <typename To> std::vector<To> FromALToVector(jobject);
+
+class JavaMethodReflect {
+public:
+    std::string name;
+    std::string descriptor;
+    bool isStatic;
+    JavaMethodReflect(std::string, std::string, bool);
+    JavaMethodReflect();
+    virtual ~JavaMethodReflect();
+};
+
+typedef std::map<std::string, VM::JavaMethodReflect> methodReflectCollection;
+typedef std::map<std::string, int> isNonUniqueCollection;
+
 class SignatureBase {
 public:
+    std::string name;
     std::string descriptor;
     bool isStatic;
     jmethodID mid;
-    SignatureBase(std::string, bool);
+    SignatureBase(std::string, std::string, bool);
     SignatureBase();
     virtual ~SignatureBase();
 };
 
-typedef std::map<std::string, VM::SignatureBase*> signature_t;
+typedef std::map<std::string, VM::SignatureBase*> methodLinkageCollection;
 
 class CJ {
 protected:
-    signature_t m;
+    isNonUniqueCollection isNonUnique;
+    methodReflectCollection methodReflect;
+    methodLinkageCollection methodLinkage;
 
     std::string className;
 
     jclass clazz;
     jobject obj;
+    void assignCollections();
+    void assignMethodReflectCollection();
+    void assignMethodLinkageCollection();
 public:
     static jint JNI_VERSION;
-    void getClassMethods(std::string);
-    void setSignature(std::string, std::string, bool);
+    //void setMSignature(std::string, std::string, bool);
     void printSignatures();
     jclass getClass();
     jobject getObj();
-    signature_t getMap();
+    std::string getUniqueKey(std::string, std::string);
+    methodLinkageCollection getMap();
     std::string getDescriptor(std::string);
     jmethodID getMid(std::string);
     int getSizeSignatures();
-    void createVM(std::vector<std::string>);
-    void destroyVM();
     void setClass(std::string);
     VM::SignatureBase* getSignatureObj(std::string);
-    void callClassConstructor_(int, ...);
+    void Constructor(std::string, ...);
     template <typename To> To call(std::string, ...);
     template <typename To> To callStatic(jmethodID, va_list);
     template <typename To> To callNonStatic(jmethodID, va_list);
@@ -96,14 +124,14 @@ template <class To> class Signature : public SignatureBase {
 public:
     RV rv;
     To (CJ::*pCall) (jmethodID, va_list);
-    Signature(std::string, bool, RV);
+    Signature(std::string, std::string, bool, RV);
     Signature();
     virtual ~Signature();
 };
 
 class ConverterBase {
 protected:
-    CJ CORE;
+    CJ UTIL;
     CJ ARRAYLIST;
     CJ SET;
     CJ COLLECTION;
@@ -120,7 +148,7 @@ protected:
     CJ DOUBLE;
     CJ CHARACTER;
 
-    virtual void initCORE() = 0;
+    virtual void initUTIL() = 0;
 
     virtual void initARRAYLIST() = 0;
     virtual void initSET() = 0;
@@ -146,7 +174,7 @@ typedef std::vector<jobject> vec_jobj;
 
 class Converter : public ConverterBase {
 protected:
-    void initCORE();
+    void initUTIL();
 
     void initARRAYLIST();
     void initMAP();
@@ -178,6 +206,7 @@ public:
     template <typename K, typename V> std::map<K, V> c_cast_map(jobject);
 
     int sizeVector(jobject);
+    int sizeMap(jobject);
     void deleteRef(jobject);
     Converter();
     ~Converter();
