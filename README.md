@@ -1,7 +1,7 @@
 CJay -- Java&trade; Native Interface made easy
 ----------------------------------------------
 
-Seamlessly call Java classes (here the "*jay*") from C++. The ``Cjay`` C++ library abstracts the use of Java&trade; Native Interface.
+Seamlessly call Java classes (here the "*jay*") from C++. The ``Cjay`` C++ library abstracts the use of Java&trade; Native Interface (JNI).
 
 ``CJay`` comes with a ``Converter`` class that straightforwardly **cast** from *primitive wrapper classes* and some ``java.util`` classes to some C++ STL objects and vice versa.
 
@@ -12,10 +12,10 @@ Why?
 
 * Although ``JNI`` is a mature library, its method caller entry points depend on the method description/signature i.e ``CallStaticVoidMethod``, ``CallVoidMethod``, ``CallObjectMethod``, and many others.
   On the other hand, ``CJay`` has **only one call method** (``CJ::call<T>``) for all types of description/signature.
+* ``CJay`` obtains [reflective information] (http://en.wikipedia.org/wiki/Reflection_(computer_programming)) about Java classes and objects at **run-time**. It automatically disassembly Java classes and extract method names and descriptors. **Forget about all messing method descriptor/signature names!**
 * ``CJay`` comes with a **conversion class** (``Convert``) that straightforwardly **cast types** from C++ to Java and **vice versa**. The conversion class can, for exmaple, convert from Java ``Arraylist<T>`` to C++ ``Vector<T>``. See ``CJ::c_cast_vector<T>`` and ``CJ::c_cast<T>`` for general primitive types.
 * Transparent interface **method caching**. Register your Java methods only once, use them around the code.
-* ``CJay`` emulates **reflection** using standard C++ Maps (you can instantiate Java classes and invoke methods by string name).   
-* You can still **use** functions in ``jni.h``. Just get the Java Virtual Machine enviroment pointer: ``VM::env``.
+* You can still **use** functions in ``jni.h``. Just get the Java&trade; Virtual Machine enviroment pointer: ``VM::env``.
 * Only **one header file**: ``CJay.hpp``
 * **Exception handler** with clear and informative error messages.
 
@@ -64,42 +64,27 @@ int main (int argc, char* argv[]) {
     // Instantiate CJay
     CJ CJ;
     
-    // Get Java CLASSPATH environment variable
-    std::string paramPath = std::string("-Djava.class.path=") + std::string(getenv("CLASSPATH"));
-    
-    // Set vector with all JVM options
-    std::vector<std::string> vmOption(paramPath);
-    
     // Create JVM
-    CJ.createVM(vmOption);
-    
-    // Register Java methods
-    //
-    // Important:
-    // Run the command "$ javap -s -p emxample.class" to get all the information you need.
-    // "setSignature" method has the arguments:
-    // (<method_name>, <method_description>, <method_is_static>).
-    //
-    CJ.setSignature( "parseArrayListInteger", "(II)Ljava/util/ArrayList;", true );
-    CJ.setSignature( "<init>", "()V", false ); // class constructor always use <init> signature
-    
-    // Instantiate a converter
-    // It allows to cast from Java Virtual Machine to C++ and vice versa
-    Converter cnv;
+    std::vector<std::string> paramVM{"-ea", "-Xdebug"};
+    VM::createVM(paramVM);
     
     // Set Java class
     CJ.setClass("example/Example");
     
     // Call Java class constructor
-    CJ.callClassConstructor(NULL); // this constructor does not require any argument, so NULL.
+    CJ.Constructor("<init>"); // Constructors have <init> signature
+    
+    // Instantiate a converter
+    // It allows to cast from Java Virtual Machine to C++ and vice versa
+    Converter cnv;
     
     // Main Routine:
     // 1) Cast from C++ to Java types
-    // 2) Call Java method
+    // 2) Call Java method (with variables just cast)
     // 3) Cast back from Java to C++
     // Important:
     // The "call" member function is templated based on
-    // the return value of Java method 
+    // the return value of Java method
     //
     // -- Java Method (ArrayList<Integer>)
     //
@@ -108,15 +93,15 @@ int main (int argc, char* argv[]) {
     jint arg_i_1 = (jint) 123;
     jint arg_i_2 = (jint) 456;
     
-    // call Java method (template dependes on returned value)
+    // call Java method
     L = CJ.call<jobject>( "parseArrayListInteger", arg_i_1, arg_i_2 ); 
     
     // cast FROM Java "ArrayList<Integer>" TO "vector<long>"
     // the caster works like magic. ONE LINE OF CODE!
-    std::vector<jint> v = cnv.c_cast_vector<jint>(L, 2); 
+    std::vector<jint> v = cnv.c_cast_vector<jint>(L); 
     
     // Destroy JVM
-    CJ.destroyVM();
+    VM::destroyVM();
 }    
 ```
 
@@ -125,21 +110,14 @@ General Implementation Steps
 
 A standard implementation should follow the steps below.
 
+* Add the path to Java class you want to instantiate to your ``CLASSPATH`` system enviroment variable.
 * Include library **header file**: ``CJay.hpp``.
-* **Assign ``JNI_VERSION``** variable (it must be compatible with the versions described in your ``<jni.h>``).
-* Define **JVM path**, additional flags and **create JVM**.
-* Obtain the **signatures/descriptions** of your Java class:
-
-  ```bash
-  $ javap -s -p <your_java_class>.class
-  ```
-
-* **Set the signatures** you just obtained calling ``setSignature``.
-* **Load/Set** the Java **class**.
-* **Call** Java class **constructor** (if you have to call non-static methods).
-* **Call** Java **method**
+* **Assign ``JNI_VERSION``** static variable (it must be compatible with the versions described in your ``<jni.h>``).
+* **Set** the Java **class**.
+* **Call** Java class **constructor** (if you would call non-static methods).
+* **Call** Java **method**.
   
-  *Here another example.*
+  *Here another example...*
   
   Consider we have a Java method ``parseString`` that recieves type ``java.lang.String`` and returns ``java.lang.String``.
   
@@ -167,7 +145,7 @@ You must link (-L option) ``jvm`` file in [Java&trade; Development Kit (JDK)] (h
 
 ``CJay`` is **C++11** compatible, so add ``-std=c++11`` flag to compiler.
 
-Make sure your `CLASSPATH` system enviroment variable includes path to your local copy of ``java/bin`` repository folder and to java class you want to call from C++.
+**Make sure your `CLASSPATH` system enviroment variable includes path to your local copy of ``java/bin`` repository folder and to java class you want to call from C++.**
 
 ``CJay`` library was extensevely tested with the configuration: ``g++ (GCC) 4.8.1`` and `Java(TM) SE Runtime Environment 1.8`
 
@@ -178,7 +156,45 @@ The `java/bin` folder has sub-folder `example` with the class library `Example.c
 
 The source code exaustevely covers many methods with different signatures. Maybe it is the best way to review the seamless integration of ``CJay`` C++ library.
 
-Compile and run ``UnitTest.cpp``.
+Compile and run ``unittest.cpp``.
+
+Important Note
+--------------
+
+You can always check the signatures obtained from your java class by calling member ``printSignatures``.
+
+When Java methods are overloaded they have the same ``name`` with different ``signatures``. In this case, we still have to uniquelly associate a ``key`` to overloaded method, since member ``call<T>`` receives method name.
+
+By convention we decided to add the ``_`` symbol at end of method name together with a number, for each overloaded method.
+
+For example, consider we have a Java class with 2 constructors:
+
+```java
+class X {
+  X(Object o) { this.o = o} // constructor receives java.lang.Object
+  X(int i) { this.i = i} // constructor receives primitive int
+  ... 
+}   
+```
+
+**ONLY IN THE OVERLOADED METHODS CASE**, you have to get unique method ``key`` using member ``getUniqueKey`` and passing the ``name`` and ``descriptor`` of method.
+
+According to the exmaple above, you can check the key assigned to construtor that receives ``java.lang.Obejct`` using the code below:
+
+``cpp
+// Output key of constructor that receives java.lang.Object
+std::cout << CJ.getUniqueKey("<init>", "(Ljava/lang/Object;)V") << std::endl;   
+``
+
+The above line of code is exepect to output ``<init>_1`` or ``<init>_2``.
+
+In order to **call the expected overloaded method at run-time** you shoud code something like this:
+
+```cpp
+// Call constructor that receives int
+CJ.call<void>(CJ.getUniqueKey("<init>", "(I)V"));
+...
+```
 
 TODO
 ----
