@@ -31,75 +31,36 @@ using namespace VM;
 jint CJ::JNI_VERSION = JNI_VERSION_1_8; // Depends on installed JDK!
 
 int main (int argc, char* argv[]) {
+    // Create JVM
+    std::vector<std::string> paramVM{"-ea", "-Xdebug"};
+    VM::createVM(paramVM);
+    //VM::createVM();
+
     CJ CJ;
 
-    // Set path to java classes
-    std::string jarsPath(getenv("CLASSPATH")); // Get CLASSPATH system environment variable
-    std::string paramPath = std::string("-Djava.class.path=") + jarsPath;
-
-    std::vector<std::string> vmOption;
-    vmOption.push_back(paramPath);
-
-    // Create JVM
+    // Set class
     try {
-        CJ.createVM(vmOption); // creates JVM
-    }
-    catch(std::exception& e) {
+        CJ.setClass("example/Example");
+    } catch(std::exception& e) {
         std::cout << e.what() << std::endl;
+        VM::destroyVM();
         return EXIT_FAILURE;
     }
-
-    CJ.getClassMethods("example/Example");
-
-    // Set member signatures
-    CJ.setSignature( "<init>", "()V", false );
-    CJ.setSignature( "parseBoolean", "(Z)Z", false );
-    CJ.setSignature( "parseByte", "(B)B", false );
-    CJ.setSignature( "parseChar", "(C)C", false );
-    CJ.setSignature( "parseShort", "(S)S", false );
-    CJ.setSignature( "parseInt", "(I)I", false );
-    CJ.setSignature( "parseLong", "(J)J", false );
-    CJ.setSignature( "parseFloat", "(F)F", false );
-    CJ.setSignature( "parseDouble", "(D)D", false );
-    CJ.setSignature( "parseString", "(Ljava/lang/String;)Ljava/lang/String;", true );
-
-    CJ.setSignature( "parseArrayListByte", "(BB)Ljava/util/ArrayList;", true );
-    CJ.setSignature( "parseArrayListShort", "(SS)Ljava/util/ArrayList;", true );
-    CJ.setSignature( "parseArrayListLong", "(JJ)Ljava/util/ArrayList;", true );
-    CJ.setSignature( "parseArrayListInteger", "(II)Ljava/util/ArrayList;", true );
-    CJ.setSignature( "parseArrayListFloat", "(FF)Ljava/util/ArrayList;", true );
-    CJ.setSignature( "parseArrayListDouble", "(DD)Ljava/util/ArrayList;", true );
-    CJ.setSignature( "parseArrayListString", "(Ljava/lang/String;Ljava/lang/String;)Ljava/util/ArrayList;", true );
-
-    CJ.setSignature( "parseSimpleMap", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map;", true );
-    CJ.setSignature( "parseMap", "([Ljava/lang/String;[I)Ljava/util/Map;", false );
 
     // Print signatures
     CJ.printSignatures();
 
-    //jclass jclazz = VM::env->FindClass("java/util/ArrayList");
-
-    // Instantiate converter
-    Converter cnv;
-
-    // Set class
-    std::string className = "example/Example";
-    try {
-        CJ.setClass(className);
-    } catch(std::exception& e) {
-        std::cout << e.what() << std::endl;
-        CJ.destroyVM();
-        return EXIT_FAILURE;
-    }
-
     // Call constructor
     try {
-        CJ.callClassConstructor(NULL);
+        CJ.Constructor("<init>"); // contructor has no parameters
     } catch(std::exception& e) {
         std::cout << e.what() << std::endl;
-        CJ.destroyVM();
+        VM::destroyVM();
         return EXIT_FAILURE;
     }
+
+    // Instantiate caster
+    Converter cnv;
 
     // Assertions
     try {
@@ -167,11 +128,12 @@ int main (int argc, char* argv[]) {
 
     } catch(std::exception& e) {
         std::cout << e.what() << std::endl;
-        CJ.destroyVM();
+        VM::destroyVM();
         return EXIT_FAILURE;
     }
 
-    CJ.destroyVM();
+    // Destroy VM
+    VM::destroyVM();
 
     return EXIT_SUCCESS;
 }
