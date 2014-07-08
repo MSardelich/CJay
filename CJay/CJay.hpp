@@ -212,6 +212,16 @@ public:
     ~Converter();
 };
 
+class Handler {
+protected:
+    CJ hdl;
+    std::string className;
+    void init();
+public:
+    Handler(std::string);
+    ~Handler();
+};
+
 class HandlerExc: public std::exception {
 private:
     std::string msg;
