@@ -21,6 +21,10 @@
 
 namespace VM {
 
+/**
+ ** VM implementation
+ **/
+
 JNIEnv* env = NULL;
 JavaVM* jvm = NULL;
 
@@ -146,21 +150,27 @@ template <typename To> std::vector<To> FromALToVector(jobject arrayList) {
 template std::vector<std::string> FromALToVector(jobject);
 template std::vector<bool> FromALToVector(jobject);
 
-// JavaMethodReflect Members
+/**
+ ** JavaMethodReflect implementation
+ **/
 JavaMethodReflect::JavaMethodReflect(std::string name, std::string descriptor, bool isStatic) :
     name(name), descriptor(descriptor), isStatic(isStatic) { }
 
 JavaMethodReflect::JavaMethodReflect() : name(""), descriptor(""), isStatic(false) { }
 JavaMethodReflect::~JavaMethodReflect() { }
 
-// Signature Base Memebrs
+/**
+ ** SignatureBase implementation
+ **/
 SignatureBase::SignatureBase(std::string name, std::string descriptor, bool isStatic) :
     name(name), descriptor(descriptor), isStatic(isStatic) , mid(NULL) { }
 
 SignatureBase::SignatureBase() : name(""), descriptor(""), isStatic(false), mid(NULL) { }
 SignatureBase::~SignatureBase() { }
 
-// Signature Members
+/**
+ ** Signature implementation
+ **/
 template <class To> Signature<To>::Signature(
         std::string name, std::string descriptor, bool isStatic, RV rv) :
         SignatureBase(name, descriptor, isStatic) {
@@ -183,8 +193,9 @@ template <class To> Signature<To>::Signature() : SignatureBase() {
 
 template <class To> Signature<To>::~Signature() { }
 
-// CJ Members
-
+/**
+ ** CJ implementation
+ **/
 CJ::CJ() : clazz(NULL), obj(NULL) {
     this->methodLinkage.clear();
 }
@@ -596,7 +607,7 @@ ConverterBase::ConverterBase() { }
 ConverterBase::~ConverterBase() { }
 
 /**
- ** Converter Members (child class)
+ ** Converter implementation
  **/
 Converter::Converter(): ConverterBase() { this->init(); }
 Converter::~Converter() { }
@@ -974,6 +985,20 @@ template std::map<std::string, std::string> Converter::c_cast_map(jobject);
 
 void Converter::deleteRef(jobject jobj) {
     env->DeleteLocalRef(jobj);
+}
+
+/**
+ ** Handler implementation
+ **/
+Handler::Handler(std::string className) {
+    this->className = className;
+    this->init();
+}
+
+Handler::~Handler() { }
+
+void Handler::init() {
+    hdl.setClass(this->className);
 }
 
 } /* namespace VM */
