@@ -63,7 +63,8 @@ int main (int argc, char* argv[]) {
     // Instantiate caster
     Converter cnv;
 
-    // test
+    // test seamless integration
+    /*
     try {
         cjay::example::Example example;
         jboolean test = example.parseBoolean((jboolean) false);
@@ -73,6 +74,7 @@ int main (int argc, char* argv[]) {
         VM::destroyVM();
         return EXIT_FAILURE;
     }
+    */
 
     // Assertions
     try {
