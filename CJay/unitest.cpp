@@ -23,12 +23,13 @@
 #include <cassert>
 
 #include "CJay.hpp"
+#include "example/Example.hpp"
 
 #define MAX_TOLERANCE 1.0e-4
 
-using namespace VM;
+jint VM::CJ::JNI_VERSION = DEFAULT_JNI_VERSION; // Depends on installed JDK!
 
-jint CJ::JNI_VERSION = JNI_VERSION_1_8; // Depends on installed JDK!
+using namespace VM;
 
 int main (int argc, char* argv[]) {
     // Create JVM
@@ -62,8 +63,24 @@ int main (int argc, char* argv[]) {
     // Instantiate caster
     Converter cnv;
 
+    // test
+    try {
+        cjay::example::Example example;
+        jboolean test = example.parseBoolean((jboolean) false);
+        assert (test == false);
+    } catch(std::exception& e) {
+        std::cout << e.what() << std::endl;
+        VM::destroyVM();
+        return EXIT_FAILURE;
+    }
+
     // Assertions
     try {
+
+        std::vector<jboolean> in {true, false};
+        jbooleanArray Za = CJ.call<jbooleanArray>( "parseArrayBoolean", cnv.j_cast<jbooleanArray>(in) );
+        std::vector<jboolean> vB = cnv.c_cast_array<jboolean>(Za);
+        assert (vB[0] == true); assert (vB[1] == false);
 
         jboolean Z = CJ.call<jboolean>( "parseBoolean", (jboolean) false );
         assert (Z == false);
