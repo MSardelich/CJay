@@ -27,6 +27,12 @@ public class Example {
   public boolean parseBoolean(boolean x) {
     return x;
   }
+  
+  //Parse boolean array
+  public boolean[] parseArrayBoolean(boolean[] x) {
+    return x;
+  }
+  
   //Parse byte
   public byte parseByte(byte x) {
     return x;
