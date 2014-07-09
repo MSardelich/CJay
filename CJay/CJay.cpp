@@ -14,7 +14,6 @@
  * limitations under the License.
  *
  ***************************************************************************/
-#define DEFAULT_JNI_VERSION JNI_VERSION_1_8
 #define CONSTRUCTOR_METHOD_NAME "<init>"
 
 #include "CJay.hpp"
@@ -289,29 +288,47 @@ void CJ::assignMethodLinkageCollection() {
         name.assign(methodR.name);
         descriptor.assign(methodR.descriptor);
         isStatic = methodR.isStatic;
+        bool isArray = false;
 
         // Extract method return value
         std::size_t pos = descriptor.find(")");
         rv = descriptor[pos+1];
-        if (rv == "[") { rv = descriptor[pos+2]; } // array case
+        if (rv == "[") { rv = descriptor[pos+2]; isArray = true; } // array case
 
-        // Assign signature
-        switch (*rv.c_str())
-        {
-        case 'Z' : signature = new Signature<jboolean>(name, descriptor, isStatic, RV::Z); break;
-        case 'B' : signature = new Signature<jbyte>(name, descriptor, isStatic, RV::B); break;
-        case 'C' : signature = new Signature<jchar>(name, descriptor, isStatic, RV::C); break;
-        case 'S' : signature = new Signature<jshort>(name, descriptor, isStatic, RV::S); break;
-        case 'I' : signature = new Signature<jint>(name, descriptor, isStatic, RV::I); break;
-        case 'J' : signature = new Signature<jlong>(name, descriptor, isStatic, RV::J); break;
-        case 'F' : signature = new Signature<jfloat>(name, descriptor, isStatic, RV::F); break;
-        case 'D' : signature = new Signature<jdouble>(name, descriptor, isStatic, RV::D); break;
-        case 'L' : signature = new Signature<jobject>(name, descriptor, isStatic, RV::L); break;
-        case 'V' : signature = new Signature<void>(name, descriptor, isStatic, RV::VV); break;
-        default :
-            throw HandlerExc("CJay Error: Malformed method descriptor.");
+        if(isArray) {
+            // Assign array signature
+            switch (*rv.c_str())
+            {
+            case 'Z' : signature = new Signature<jbooleanArray>(name, descriptor, isStatic, RV::Z); break;
+            case 'B' : signature = new Signature<jbyteArray>(name, descriptor, isStatic, RV::B); break;
+            case 'C' : signature = new Signature<jcharArray>(name, descriptor, isStatic, RV::C); break;
+            case 'S' : signature = new Signature<jshortArray>(name, descriptor, isStatic, RV::S); break;
+            case 'I' : signature = new Signature<jintArray>(name, descriptor, isStatic, RV::I); break;
+            case 'J' : signature = new Signature<jlongArray>(name, descriptor, isStatic, RV::J); break;
+            case 'F' : signature = new Signature<jfloatArray>(name, descriptor, isStatic, RV::F); break;
+            case 'D' : signature = new Signature<jdoubleArray>(name, descriptor, isStatic, RV::D); break;
+            case 'L' : signature = new Signature<jobjectArray>(name, descriptor, isStatic, RV::L); break;
+            default :
+                throw HandlerExc("CJay Error: Malformed method descriptor.");
+            }
+        } else {
+            // Assign non-array signature
+            switch (*rv.c_str())
+            {
+            case 'Z' : signature = new Signature<jboolean>(name, descriptor, isStatic, RV::Z); break;
+            case 'B' : signature = new Signature<jbyte>(name, descriptor, isStatic, RV::B); break;
+            case 'C' : signature = new Signature<jchar>(name, descriptor, isStatic, RV::C); break;
+            case 'S' : signature = new Signature<jshort>(name, descriptor, isStatic, RV::S); break;
+            case 'I' : signature = new Signature<jint>(name, descriptor, isStatic, RV::I); break;
+            case 'J' : signature = new Signature<jlong>(name, descriptor, isStatic, RV::J); break;
+            case 'F' : signature = new Signature<jfloat>(name, descriptor, isStatic, RV::F); break;
+            case 'D' : signature = new Signature<jdouble>(name, descriptor, isStatic, RV::D); break;
+            case 'L' : signature = new Signature<jobject>(name, descriptor, isStatic, RV::L); break;
+            case 'V' : signature = new Signature<void>(name, descriptor, isStatic, RV::VV); break;
+            default :
+                throw HandlerExc("CJay Error: Malformed method descriptor.");
+            }
         }
-
         // Store linkage
         this->methodLinkage.insert(methodLinkageCollection::value_type(key, signature));
     }
@@ -492,6 +509,15 @@ template jlong CJ::call(std::string, ...);
 template jfloat CJ::call(std::string, ...);
 template jdouble CJ::call(std::string, ...);
 template jobject CJ::call(std::string, ...);
+template jbooleanArray CJ::call(std::string, ...);
+template jbyteArray CJ::call(std::string, ...);
+template jcharArray CJ::call(std::string, ...);
+template jshortArray CJ::call(std::string, ...);
+template jintArray CJ::call(std::string, ...);
+template jlongArray CJ::call(std::string, ...);
+template jfloatArray CJ::call(std::string, ...);
+template jdoubleArray CJ::call(std::string, ...);
+template jobjectArray CJ::call(std::string, ...);
 template void CJ::call(std::string, ...);
 
 template <> jboolean CJ::callStatic(jmethodID mid, va_list args) {
@@ -530,10 +556,47 @@ template <> jobject CJ::callStatic(jmethodID mid, va_list args) {
     return env->CallStaticObjectMethodV(this->clazz, mid, args);
 }
 
+template <> jbooleanArray CJ::callStatic(jmethodID mid, va_list args) {
+    return (jbooleanArray) env->CallStaticObjectMethodV(this->clazz, mid, args);
+}
+
+template <> jbyteArray CJ::callStatic(jmethodID mid, va_list args) {
+    return (jbyteArray) env->CallStaticObjectMethodV(this->clazz, mid, args);
+}
+
+template <> jcharArray CJ::callStatic(jmethodID mid, va_list args) {
+    return (jcharArray) env->CallStaticObjectMethodV(this->clazz, mid, args);
+}
+
+template <> jshortArray CJ::callStatic(jmethodID mid, va_list args) {
+    return (jshortArray) env->CallStaticObjectMethodV(this->clazz, mid, args);
+}
+
+template <> jintArray CJ::callStatic(jmethodID mid, va_list args) {
+    return (jintArray) env->CallStaticObjectMethodV(this->clazz, mid, args);
+}
+
+template <> jlongArray CJ::callStatic(jmethodID mid, va_list args) {
+    return (jlongArray) env->CallStaticObjectMethodV(this->clazz, mid, args);
+}
+
+template <> jfloatArray CJ::callStatic(jmethodID mid, va_list args) {
+    return (jfloatArray) env->CallStaticObjectMethodV(this->clazz, mid, args);
+}
+
+template <> jdoubleArray CJ::callStatic(jmethodID mid, va_list args) {
+    return (jdoubleArray) env->CallStaticObjectMethodV(this->clazz, mid, args);
+}
+
+template <> jobjectArray CJ::callStatic(jmethodID mid, va_list args) {
+    return (jobjectArray) env->CallStaticObjectMethodV(this->clazz, mid, args);
+}
+
 template <> void CJ::callStatic(jmethodID mid, va_list args) {
     env->CallStaticVoidMethodV(this->clazz, mid, args);
 }
 
+/*
 template jboolean CJ::callStatic(jmethodID, va_list);
 template jbyte CJ::callStatic(jmethodID, va_list);
 template jchar CJ::callStatic(jmethodID, va_list);
@@ -543,7 +606,17 @@ template jlong CJ::callStatic(jmethodID, va_list);
 template jfloat CJ::callStatic(jmethodID, va_list);
 template jdouble CJ::callStatic(jmethodID, va_list);
 template jobject CJ::callStatic(jmethodID, va_list);
+template jbooleanArray CJ::callStatic(jmethodID, va_list);
+template jbyteArray CJ::callStatic(jmethodID, va_list);
+template jcharArray CJ::callStatic(jmethodID, va_list);
+template jshortArray CJ::callStatic(jmethodID, va_list);
+template jintArray CJ::callStatic(jmethodID, va_list);
+template jlongArray CJ::callStatic(jmethodID, va_list);
+template jfloatArray CJ::callStatic(jmethodID, va_list);
+template jdoubleArray CJ::callStatic(jmethodID, va_list);
+template jobjectArray CJ::callStatic(jmethodID, va_list);
 template void CJ::callStatic(jmethodID, va_list);
+*/
 
 template <> jboolean CJ::callNonStatic(jmethodID mid, va_list args) {
     return env->CallBooleanMethodV(this->obj, mid, args);
@@ -581,10 +654,47 @@ template <> jobject CJ::callNonStatic(jmethodID mid, va_list args) {
     return env->CallObjectMethodV(this->obj, mid, args);
 }
 
+template <> jbooleanArray CJ::callNonStatic(jmethodID mid, va_list args) {
+    return (jbooleanArray) env->CallObjectMethodV(this->obj, mid, args);
+}
+
+template <> jbyteArray CJ::callNonStatic(jmethodID mid, va_list args) {
+    return (jbyteArray) env->CallObjectMethodV(this->obj, mid, args);
+}
+
+template <> jcharArray CJ::callNonStatic(jmethodID mid, va_list args) {
+    return (jcharArray) env->CallObjectMethodV(this->obj, mid, args);
+}
+
+template <> jshortArray CJ::callNonStatic(jmethodID mid, va_list args) {
+    return (jshortArray) env->CallObjectMethodV(this->obj, mid, args);
+}
+
+template <> jintArray CJ::callNonStatic(jmethodID mid, va_list args) {
+    return (jintArray) env->CallObjectMethodV(this->obj, mid, args);
+}
+
+template <> jlongArray CJ::callNonStatic(jmethodID mid, va_list args) {
+    return (jlongArray) env->CallObjectMethodV(this->obj, mid, args);
+}
+
+template <> jfloatArray CJ::callNonStatic(jmethodID mid, va_list args) {
+    return (jfloatArray) env->CallObjectMethodV(this->obj, mid, args);
+}
+
+template <> jdoubleArray CJ::callNonStatic(jmethodID mid, va_list args) {
+    return (jdoubleArray) env->CallObjectMethodV(this->obj, mid, args);
+}
+
+template <> jobjectArray CJ::callNonStatic(jmethodID mid, va_list args) {
+    return (jobjectArray) env->CallObjectMethodV(this->obj, mid, args);
+}
+
 template <> void CJ::callNonStatic(jmethodID mid, va_list args) {
     env->CallVoidMethodV(this->obj, mid, args);
 }
 
+/*
 template jboolean CJ::callNonStatic(jmethodID, va_list);
 template jbyte CJ::callNonStatic(jmethodID, va_list);
 template jchar CJ::callNonStatic(jmethodID, va_list);
@@ -594,7 +704,9 @@ template jlong CJ::callNonStatic(jmethodID, va_list);
 template jfloat CJ::callNonStatic(jmethodID, va_list);
 template jdouble CJ::callNonStatic(jmethodID, va_list);
 template jobject CJ::callNonStatic(jmethodID, va_list);
+template jbooleanArray CJ::callNonStatic(jmethodID, va_list);
 template void CJ::callNonStatic(jmethodID, va_list);
+*/
 
 JNIEnv* CJ::getEnv() {
     return env;
@@ -728,6 +840,72 @@ template <> jstring Converter::j_cast(const char* str) {
     return env->NewStringUTF(str);
 }
 
+template <> jbooleanArray Converter::j_cast(std::vector<jboolean> x) {
+    size_t size = x.size();
+    jbooleanArray jArray = env->NewBooleanArray(size);
+    jboolean* cArray = &x[0];
+    env->SetBooleanArrayRegion(jArray, 0, size, cArray);
+    return jArray;
+}
+
+template <> jbyteArray Converter::j_cast(std::vector<jbyte> x) {
+    size_t size = x.size();
+    jbyteArray jArray = env->NewByteArray(size);
+    jbyte* cArray = &x[0];
+    env->SetByteArrayRegion(jArray, 0, size, cArray);
+    return jArray;
+}
+
+template <> jshortArray Converter::j_cast(std::vector<jshort> x) {
+    size_t size = x.size();
+    jshortArray jArray = env->NewShortArray(size);
+    jshort* cArray = &x[0];
+    env->SetShortArrayRegion(jArray, 0, size, cArray);
+    return jArray;
+}
+
+template <> jlongArray Converter::j_cast(std::vector<jlong> x) {
+    size_t size = x.size();
+    jlongArray jArray = env->NewLongArray(size);
+    jlong* cArray = &x[0];
+    env->SetLongArrayRegion(jArray, 0, size, cArray);
+    return jArray;
+}
+
+template <> jintArray Converter::j_cast(std::vector<jint> x) {
+    size_t size = x.size();
+    jintArray jArray = env->NewIntArray(size);
+    jint* cArray = &x[0];
+    env->SetIntArrayRegion(jArray, 0, size, cArray);
+    return jArray;
+}
+
+template <> jfloatArray Converter::j_cast(std::vector<jfloat> x) {
+    size_t size = x.size();
+    jfloatArray jArray = env->NewFloatArray(size);
+    jfloat* cArray = &x[0];
+    env->SetFloatArrayRegion(jArray, 0, size, cArray);
+    return jArray;
+}
+
+template <> jcharArray Converter::j_cast(std::vector<jchar> x) {
+    size_t size = x.size();
+    jcharArray jArray = env->NewCharArray(size);
+    jchar* cArray = &x[0];
+    env->SetCharArrayRegion(jArray, 0, size, cArray);
+    return jArray;
+}
+
+template <> jobjectArray Converter::j_cast(std::vector<jobject> x) {
+    size_t size = x.size();
+    jobjectArray jArray = env->NewObjectArray(size, env->GetObjectClass(x[0]), x[0]);
+    for(size_t i = 0; i < size; i++) {
+        env->SetObjectArrayElement(jArray, (jsize) i, x[i]);
+    }
+    return jArray;
+}
+
+
 /* c_cast<> specialization */
 template <> jbyte Converter::c_cast(jobject jobj) {
     jmethodID mid = BYTE.getSignatureObj("byteValue")->mid;
@@ -779,6 +957,77 @@ template <> std::string Converter::c_cast(jobject jobj) {
 
 template <> jobject Converter::c_cast(jobject jobj) {
     return jobj;
+}
+
+template <> std::vector<jboolean> Converter::c_cast_array(jbooleanArray x) {
+    jsize size = env->GetArrayLength(x);
+    jboolean* cArray = env->GetBooleanArrayElements(x, 0);
+    std::vector<jboolean> cVec;
+    for(jsize i = 0; i < size; i++) { cVec.push_back(*(cArray+i)); }
+    return cVec;
+}
+
+template <> std::vector<jbyte> Converter::c_cast_array(jbyteArray x) {
+    jsize size = env->GetArrayLength(x);
+    jbyte* cArray = env->GetByteArrayElements(x, 0);
+    std::vector<jbyte> cVec;
+    for(jsize i = 0; i < size; i++) { cVec.push_back(*(cArray+i)); }
+    return cVec;
+}
+
+template <> std::vector<jint> Converter::c_cast_array(jintArray x) {
+    jsize size = env->GetArrayLength(x);
+    jint* cArray = env->GetIntArrayElements(x, 0);
+    std::vector<jint> cVec;
+    for(jsize i = 0; i < size; i++) { cVec.push_back(*(cArray+i)); }
+    return cVec;
+}
+
+template <> std::vector<jlong> Converter::c_cast_array(jlongArray x) {
+    jsize size = env->GetArrayLength(x);
+    jlong* cArray = env->GetLongArrayElements(x, 0);
+    std::vector<jlong> cVec;
+    for(jsize i = 0; i < size; i++) { cVec.push_back(*(cArray+i)); }
+    return cVec;
+}
+
+template <> std::vector<jshort> Converter::c_cast_array(jshortArray x) {
+    jsize size = env->GetArrayLength(x);
+    jshort* cArray = env->GetShortArrayElements(x, 0);
+    std::vector<jshort> cVec;
+    for(jsize i = 0; i < size; i++) { cVec.push_back(*(cArray+i)); }
+    return cVec;
+}
+
+template <> std::vector<jfloat> Converter::c_cast_array(jfloatArray x) {
+    jsize size = env->GetArrayLength(x);
+    jfloat* cArray = env->GetFloatArrayElements(x, 0);
+    std::vector<jfloat> cVec;
+    for(jsize i = 0; i < size; i++) { cVec.push_back(*(cArray+i)); }
+    return cVec;
+}
+
+template <> std::vector<jdouble> Converter::c_cast_array(jdoubleArray x) {
+    jsize size = env->GetArrayLength(x);
+    jdouble* cArray = env->GetDoubleArrayElements(x, 0);
+    std::vector<jdouble> cVec;
+    for(jsize i = 0; i < size; i++) { cVec.push_back(*(cArray+i)); }
+    return cVec;
+}
+
+template <> std::vector<jchar> Converter::c_cast_array(jcharArray x) {
+    jsize size = env->GetArrayLength(x);
+    jchar* cArray = env->GetCharArrayElements(x, 0);
+    std::vector<jchar> cVec;
+    for(jsize i = 0; i < size; i++) { cVec.push_back(*(cArray+i)); }
+    return cVec;
+}
+
+template <> std::vector<jobject> Converter::c_cast_array(jobjectArray x) {
+    jsize size = env->GetArrayLength(x);
+    std::vector<jobject> cVec;
+    for(jsize i = 0; i < size; i++) { cVec.push_back(env->GetObjectArrayElement(x, i)); }
+    return cVec;
 }
 
 int Converter::sizeVector(jobject jobj) {
