@@ -16,9 +16,8 @@
  ***************************************************************************/
 #ifndef CJAY_H_
 #define CJAY_H_
-#endif /* CJAY_H_ */
 
-//#define callClassConstructor(...) callClassConstructor_(1, __VA_ARGS__)
+#define DEFAULT_JNI_VERSION JNI_VERSION_1_8
 
 #include <iostream>
 #include <cstdlib>
@@ -200,6 +199,7 @@ public:
     template <typename To, typename From> To j_cast(From);
     template <typename To> To c_cast(jobject);
 
+    template <typename To, typename From> std::vector<To> c_cast_array(From);
     template <typename To> std::vector<To> c_cast_vector(jobject);
     template <typename To> std::vector<To> c_cast_vector(jobject, int);
 
@@ -209,7 +209,7 @@ public:
     int sizeMap(jobject);
     void deleteRef(jobject);
     Converter();
-    ~Converter();
+    virtual ~Converter();
 };
 
 class Handler {
@@ -219,7 +219,7 @@ protected:
     void init();
 public:
     Handler(std::string);
-    ~Handler();
+    virtual ~Handler();
 };
 
 class HandlerExc: public std::exception {
@@ -232,3 +232,5 @@ public:
 };
 
 } /* namespace VM */
+
+#endif /* CJAY_H_ */
