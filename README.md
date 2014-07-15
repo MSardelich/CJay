@@ -66,7 +66,7 @@ int main (int argc, char* argv[]) {
     
     // Create JVM
     std::vector<std::string> paramVM{"-ea", "-Xdebug"};
-    VM::createVM(paramVM);
+    createVM(paramVM);
     
     // Set Java class
     CJ.setClass("example/Example");
@@ -101,7 +101,7 @@ int main (int argc, char* argv[]) {
     std::vector<jint> v = cnv.c_cast_vector<jint>(L); 
     
     // Destroy JVM
-    VM::destroyVM();
+    destroyVM();
 }    
 ```
 
