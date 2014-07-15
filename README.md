@@ -12,7 +12,7 @@ Why?
 
 * Although ``JNI`` is a mature library, its method caller entry points depend on the method description/signature i.e ``CallStaticVoidMethod``, ``CallVoidMethod``, ``CallObjectMethod``, and many others.
   On the other hand, ``CJay`` has **only one call method** (``CJ::call<T>``) for all types of description/signature.
-* ``CJay`` obtains [reflective information] (http://en.wikipedia.org/wiki/Reflection_(computer_programming)) about Java classes and objects at **run-time**. It automatically disassembly Java classes and extract method names and descriptors. **Forget about all messing method descriptor/signature names!**
+* ``CJay`` obtains [reflective information] (http://en.wikipedia.org/wiki/Reflection_(computer_programming)) about Java classes and objects at **run-time**. It automatically disassembly Java classes and extract method names and descriptors. **Forget about all messing descriptor strings!**
 * ``CJay`` comes with a **conversion class** (``Convert``) that straightforwardly **cast types** from C++ to Java and **vice versa**. The conversion class can, for exmaple, convert from Java ``Arraylist<T>`` to C++ ``Vector<T>``. See ``CJ::c_cast_vector<T>`` and ``CJ::c_cast<T>`` for general primitive types.
 * Transparent interface **method caching**. Register your Java methods only once, use them around the code.
 * You can still **use** functions in ``jni.h``. Just get the Java&trade; Virtual Machine enviroment pointer: ``VM::env``.
